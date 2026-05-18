@@ -1,0 +1,919 @@
+{
+  "info": {
+    "_postman_id": "caad2814-29e3-4e09-8446-88e8c71be0dc",
+    "name": "ezTripz",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "16831670"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"user@example.com\",\"password\":\"secret12\",\"role\":\"USER\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/auth/register",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/register\" -H \"Content-Type: application/json\" -d '{\"email\":\"user@example.com\",\"password\":\"secret12\",\"role\":\"USER\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@eztripx.com\",\n    \"password\": \"admin147\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/auth/login",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/login\" -H \"Content-Type: application/json\" -d '{\"email\":\"user@example.com\",\"password\":\"secret12\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\":\"<REFRESH_TOKEN>\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/auth/refresh",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/refresh\" -H \"Content-Type: application/json\" -d '{\"refreshToken\":\"<REFRESH_TOKEN>\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/auth/logout",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/logout\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Region",
+      "item": [
+        {
+          "name": "Create Region",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Southeast Asia\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/region",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "region"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/region\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Southeast Asia\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Region",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"SEA\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/region/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "region",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"SEA\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Region",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/region/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "region",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "List Regions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE}}/region?page=1&limit=10&search=",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "region"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/region?page=1&limit=10&search=\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Region by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/region/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "region",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Country",
+      "item": [
+        {
+          "name": "Create Country",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Indonesia\",\"regionId\":1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/country",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "country"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/country\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Indonesia\",\"regionId\":1}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Country",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Republik Indonesia\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/country/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "country",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Republik Indonesia\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Country",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/country/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "country",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "List Countries",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE}}/country?page=1&limit=10",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "country"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/country?page=1&limit=10\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Country by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/country/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "country",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "City",
+      "item": [
+        {
+          "name": "Create City",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Jakarta\",\"countryId\":1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/city",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "city"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/city\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Jakarta\",\"countryId\":1}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Update City",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Jakarta Pusat\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE}}/city/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "city",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Jakarta Pusat\"}'"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete City",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/city/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "city",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "List Cities",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE}}/city?page=1&limit=10&search=",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "city"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/city?page=1&limit=10\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "Get City by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/city/1",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "city",
+                "1"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Document-Guide",
+      "item": [
+        {
+          "name": "Create Document Guide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "title",
+                  "value": "My Guide"
+                },
+                {
+                  "type": "text",
+                  "key": "tags",
+                  "value": "[{\"regionId\":1,\"countryId\":1,\"cityId\":1}]"
+                },
+                {
+                  "type": "text",
+                  "key": "priceIdr",
+                  "value": "150000"
+                },
+                {
+                  "type": "text",
+                  "key": "priceUsd",
+                  "value": ""
+                },
+                {
+                  "type": "file",
+                  "contentType": "application/pdf",
+                  "key": "document",
+                  "src": "/path/to/file.pdf"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE}}/document-guide",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "document-guide"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/document-guide\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -F \"title=My Guide\" -F 'tags=[{\"regionId\":1,\"countryId\":1,\"cityId\":1}]' -F \"priceIdr=150000\" -F \"priceUsd=\" -F \"document=@/path/to/file.pdf;type=application/pdf\""
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document Guide",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "title",
+                  "value": "Updated title"
+                },
+                {
+                  "type": "text",
+                  "key": "tags",
+                  "value": "[{\"regionId\":1}]"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "document-guide",
+                "<GUIDE_UUID>"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -F \"title=Updated title\" -F 'tags=[{\"regionId\":1}]'"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document Guide",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "document-guide",
+                "<GUIDE_UUID>"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "List Document Guides",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/document-guide?page=1&limit=10&search=",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "document-guide"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/document-guide?page=1&limit=10&search=\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Guide by UUID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "document-guide",
+                "<GUIDE_UUID>"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "Preview Document Guide",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>/preview",
+              "host": [
+                "{{BASE}}"
+              ],
+              "path": [
+                "document-guide",
+                "<GUIDE_UUID>",
+                "preview"
+              ]
+            },
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/document-guide/<GUIDE_UUID>/preview\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+          },
+          "response": []
+        },
+        {
+          "name": "http://localhost:3000/document-guide/DOCUMENT_GUIDE_UUID/download",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_ACCESS_TOKEN"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/document-guide/DOCUMENT_GUIDE_UUID/download",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "document-guide",
+                "DOCUMENT_GUIDE_UUID",
+                "download"
+              ]
+            },
+            "description": "Generated from cURL: curl -L -o guide.pdf \\\n  -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\" \\\n  \"http://localhost:3000/document-guide/DOCUMENT_GUIDE_UUID/download\""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE}}/",
+          "host": [
+            "{{BASE}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "Generated from cURL: curl -sS --url \"{{BASE}}/\""
+      },
+      "response": []
+    }
+  ]
+}

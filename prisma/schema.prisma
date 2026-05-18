@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StatusPayment {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
+
+enum PaymentProvider {
+  XENDIT
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  password     String
+  role         Role           @default(USER)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  countryId    Int?
+  country      Country?       @relation(fields: [countryId], references: [id])
+  order        Order[]
+  refreshToken RefreshToken[]
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  expiredAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Region {
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  countries              Country[]
+  tagDocumentDestination TagDocumentDestination[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+}
+
+model Country {
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  regionId               Int
+  region                 Region                   @relation(fields: [regionId], references: [id])
+  city                   City[]
+  tagDocumentDestination TagDocumentDestination[]
+  user                   User[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+}
+
+model City {
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  countryId              Int
+  country                Country                  @relation(fields: [countryId], references: [id])
+  tagDocumentDestination TagDocumentDestination[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+}
+
+model DocumentGuide {
+  id                     String                   @id @default(uuid())
+  title                  String
+  nameDocument           String
+  priceIdr               Decimal?                 @db.Decimal(15, 2)
+  priceUsd               Decimal?                 @db.Decimal(15, 2)
+  tagDocumentDestination TagDocumentDestination[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  order                  Order[]
+}
+
+model TagDocumentDestination {
+  id              Int           @id @default(autoincrement())
+  documentGuideId String
+  regionId        Int
+  countryId       Int?
+  cityId          Int?
+  documentGuide   DocumentGuide @relation(fields: [documentGuideId], references: [id])
+  region          Region        @relation(fields: [regionId], references: [id])
+  country         Country?      @relation(fields: [countryId], references: [id])
+  city            City?         @relation(fields: [cityId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Order {
+  id                   String          @id @default(uuid())
+  price                Decimal         @db.Decimal(15, 2)
+  currency             String
+  userId               String
+  documentGuideId      String
+  statusPayment        StatusPayment   @default(PENDING)
+  paymentProvider      PaymentProvider
+  gatewayTransactionId String?
+  paymentUrl           String?
+  paidAt               DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  documentGuide        DocumentGuide   @relation(fields: [documentGuideId], references: [id])
+  user                 User            @relation(fields: [userId], references: [id])
+}

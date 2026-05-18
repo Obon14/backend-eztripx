@@ -1,0 +1,37 @@
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { PrismaModule } from "./prisma/prisma.module";
+import { ConfigModule } from "@nestjs/config";
+import { ThrottlerModule } from "@nestjs/throttler";
+import { RegionModule } from './region/region.module';
+import { CountryModule } from './country/country.module';
+import { CityModule } from './city/city.module';
+import { DocumentGuideModule } from './document-guide/document-guide.module';
+import { OrderModule } from './order/order.module';
+
+@Module({
+  imports: [
+    AuthModule,
+    PrismaModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    ThrottlerModule.forRoot([
+      {
+        name: "default",
+        ttl: 60_000,
+        limit: 10_000,
+      },
+    ]),
+    RegionModule,
+    CountryModule,
+    CityModule,
+    DocumentGuideModule,
+    OrderModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
