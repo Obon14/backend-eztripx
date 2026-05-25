@@ -31,6 +31,12 @@ export const ErrorMessages = {
   ORDER_PAYMENT_NOT_INITIATED: 'Payment has not been initiated for this order',
   ORDER_PAYMENT_REQUIRED:
     'Payment is required to access this document guide',
+  ORDER_ALREADY_PURCHASED:
+    'You have already purchased this document guide',
+  ORDER_PENDING_EXISTS:
+    'An unpaid order already exists for this document guide',
+  USER_HAS_ORDERS: 'Cannot delete user because they have related orders',
+  USER_CANNOT_DELETE_SELF: 'You cannot delete your own account',
 } as const;
 
 export const SuccessMessages = {

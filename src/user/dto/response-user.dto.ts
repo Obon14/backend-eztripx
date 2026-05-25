@@ -2,7 +2,7 @@ import { Exclude, Expose } from "class-transformer";
 import { RoleEnums } from "../../common/enum/role.enum";
 
 @Exclude()
-export class RegisterResponseDto {
+export class ResponseUserDto {
   @Expose()
   id: string;
 
@@ -10,8 +10,11 @@ export class RegisterResponseDto {
   email: string;
 
   @Expose()
+  role: RoleEnums;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()
-  role: RoleEnums;
+  updatedAt: Date;
 }

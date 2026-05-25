@@ -8,7 +8,8 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { RegisterDto } from "./dto/register.dto";
 import { ErrorMessages } from "../common/constants/message.constants";
-import * as bcrypt from 'bcrypt';
+import { Role } from "../../generated/prisma/client";
+import * as bcrypt from "bcrypt";
 import { RegisterResponseDto } from "./dto/register-response.dto";
 import { plainToInstance } from "class-transformer";
 import { LoginDto } from "./dto/login.dto";
@@ -46,7 +47,7 @@ export class AuthService {
       data: {
         email: req.email,
         password: hashPassword,
-        role: req.role,
+        role: Role.USER,
       },
     });
     return plainToInstance(RegisterResponseDto, newUser);

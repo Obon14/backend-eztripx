@@ -1,10 +1,14 @@
 import { Prisma } from "../../../generated/prisma/client";
 import { ResponseDetailTagDto } from "./response-detail-document-guide.dto";
+import { buildPublicCoverImageUrl } from "../document-guide.storage";
 
 export class ResponseListDocumentGuideDto {
   id: string;
-  title: string;
+  titleId: string;
+  titleEn: string | null;
   nameDocument: string;
+  tripDays: number | null;
+  coverImages: Array<{ id: string; url: string; sortOrder: number }>;
   priceIdr: string | null;
   priceUsd: string | null;
   tags: ResponseDetailTagDto[];
@@ -12,8 +16,10 @@ export class ResponseListDocumentGuideDto {
 
   constructor(row: {
     id: string;
-    title: string;
+    titleId: string;
+    titleEn: string | null;
     nameDocument: string;
+    tripDays: number | null;
     priceIdr: Prisma.Decimal | null;
     priceUsd: Prisma.Decimal | null;
     createdAt: Date;
@@ -26,10 +32,24 @@ export class ResponseListDocumentGuideDto {
       country: { id: number; name: string } | null;
       city: { id: number; name: string } | null;
     }>;
+    coverImages: Array<{
+      id: string;
+      filename: string;
+      sortOrder: number;
+    }>;
   }) {
     this.id = row.id;
-    this.title = row.title;
+    this.titleId = row.titleId;
+    this.titleEn = row.titleEn;
     this.nameDocument = row.nameDocument;
+    this.tripDays = row.tripDays;
+    this.coverImages = [...row.coverImages]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((img) => ({
+        id: img.id,
+        url: buildPublicCoverImageUrl(row.id, img.id),
+        sortOrder: img.sortOrder,
+      }));
     this.priceIdr = row.priceIdr?.toString() ?? null;
     this.priceUsd = row.priceUsd?.toString() ?? null;
     this.createdAt = row.createdAt;

@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import {
@@ -16,14 +18,25 @@ import { RoleEnums } from "../common/enum/role.enum";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { ResponseOrderDto } from "./dto/response-order.dto";
 import type { InvoiceStatus } from "xendit-node/invoice/models";
+import { MailService } from "../mail/mail.service";
 
 const DEFAULT_INVOICE_DURATION_SEC = 86_400;
 
+const orderGuideSelect = {
+  id: true,
+  titleId: true,
+  titleEn: true,
+  nameDocument: true,
+} as const;
+
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly xendit: XenditService,
+    private readonly mail: MailService,
   ) {}
 
   async create(userId: string, userEmail: string, dto: CreateOrderDto) {
@@ -31,13 +44,28 @@ export class OrderService {
       where: { id: dto.documentGuideId },
       select: {
         id: true,
-        title: true,
+        titleId: true,
+        titleEn: true,
         priceIdr: true,
         priceUsd: true,
       },
     });
     if (!guide) {
       throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+
+    const existing = await this.resolveExistingOrderBeforeCheckout(
+      userId,
+      guide.id,
+    );
+    if (existing?.statusPayment === StatusPayment.PAID) {
+      throw new ConflictException(ErrorMessages.ORDER_ALREADY_PURCHASED);
+    }
+    if (existing?.statusPayment === StatusPayment.PENDING) {
+      if (!existing.paymentUrl) {
+        throw new BadRequestException(ErrorMessages.ORDER_PAYMENT_NOT_INITIATED);
+      }
+      return new ResponseOrderDto(existing);
     }
 
     const price = this.resolveGuidePrice(guide, dto.currency);
@@ -54,13 +82,20 @@ export class OrderService {
     });
 
     try {
+      const returnBase =
+        process.env.PAYMENT_RETURN_URL?.trim() ||
+        process.env.FRONTEND_URL?.trim() ||
+        "http://localhost:3000";
+      const successRedirectUrl = `${returnBase.replace(/\/$/, "")}/payment/return?orderId=${order.id}`;
+
       const invoice = await this.xendit.createInvoice({
         externalId: order.id,
         amount: this.toXenditAmount(price, dto.currency),
         currency: dto.currency,
-        description: guide.title,
+        description: guide.titleEn?.trim() || guide.titleId,
         payerEmail: userEmail,
         invoiceDuration: DEFAULT_INVOICE_DURATION_SEC,
+        successRedirectUrl,
       });
 
       const updated = await this.prisma.order.update({
@@ -70,7 +105,7 @@ export class OrderService {
           paymentUrl: invoice.invoiceUrl ?? null,
         },
         include: {
-          documentGuide: { select: { id: true, title: true } },
+          documentGuide: { select: orderGuideSelect },
         },
       });
 
@@ -86,7 +121,7 @@ export class OrderService {
       where: { userId },
       orderBy: { createdAt: "desc" },
       include: {
-        documentGuide: { select: { id: true, title: true } },
+        documentGuide: { select: orderGuideSelect },
       },
     });
     return rows.map((row) => new ResponseOrderDto(row));
@@ -96,7 +131,7 @@ export class OrderService {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
       include: {
-        documentGuide: { select: { id: true, title: true } },
+        documentGuide: { select: orderGuideSelect },
       },
     });
     if (!order) {
@@ -117,29 +152,59 @@ export class OrderService {
     }
 
     const invoice = await this.xendit.getInvoiceById(order.gatewayTransactionId);
-    const nextStatus = this.mapXenditStatus(invoice.status);
+    const updated = await this.applyPaymentStatus(order.id, invoice.status, {
+      gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
+    });
+    return new ResponseOrderDto(updated);
+  }
 
-    const updated = await this.prisma.order.update({
-      where: { id: order.id },
-      data: {
-        statusPayment: nextStatus,
-        paidAt:
-          nextStatus === StatusPayment.PAID
-            ? (order.paidAt ?? new Date())
-            : order.paidAt,
-      },
-      include: {
-        documentGuide: { select: { id: true, title: true } },
-      },
+  /**
+   * Xendit invoice webhook (Invoice API). Idempotent — safe to retry.
+   */
+  async handleXenditInvoiceWebhook(payload: Record<string, unknown>) {
+    const externalId = this.readWebhookField(payload, "external_id", "externalId");
+    const invoiceId = this.readWebhookField(payload, "id", "invoice_id");
+    const status = this.readWebhookField(payload, "status");
+
+    if (!externalId || !status) {
+      throw new BadRequestException("Invalid Xendit webhook payload");
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: externalId },
     });
 
-    return new ResponseOrderDto(updated);
+    if (!order) {
+      return { ok: true, ignored: true, reason: "order_not_found" };
+    }
+
+    if (
+      invoiceId &&
+      order.gatewayTransactionId &&
+      order.gatewayTransactionId !== invoiceId
+    ) {
+      return { ok: true, ignored: true, reason: "invoice_id_mismatch" };
+    }
+
+    const updated = await this.applyPaymentStatus(
+      order.id,
+      status as InvoiceStatus,
+      {
+        gatewayTransactionId: invoiceId ?? order.gatewayTransactionId,
+      },
+    );
+
+    return {
+      ok: true,
+      orderId: updated.id,
+      statusPayment: updated.statusPayment,
+    };
   }
 
   async assertUserCanAccessGuide(
     documentGuideId: string,
     userId: string,
-    role: string,
+    role: RoleEnums | string,
   ) {
     if (role === RoleEnums.ADMIN) {
       return;
@@ -178,6 +243,131 @@ export class OrderService {
       return Math.round(value);
     }
     return Math.round(value * 100) / 100;
+  }
+
+  /**
+   * Blocks duplicate checkout: one PAID per user+guide, resume active PENDING.
+   * Syncs stale PENDING with Xendit so expired invoices allow a new order.
+   */
+  private async resolveExistingOrderBeforeCheckout(
+    userId: string,
+    documentGuideId: string,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        userId,
+        documentGuideId,
+        statusPayment: {
+          in: [StatusPayment.PAID, StatusPayment.PENDING],
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        documentGuide: { select: orderGuideSelect },
+      },
+    });
+
+    if (!order || order.statusPayment !== StatusPayment.PENDING) {
+      return order;
+    }
+
+    if (!order.gatewayTransactionId) {
+      return order;
+    }
+
+    const invoice = await this.xendit.getInvoiceById(order.gatewayTransactionId);
+    const nextStatus = this.mapXenditStatus(invoice.status);
+
+    if (nextStatus === order.statusPayment) {
+      return order;
+    }
+
+    return this.applyPaymentStatus(order.id, invoice.status, {
+      gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
+    });
+  }
+
+  private async applyPaymentStatus(
+    orderId: string,
+    invoiceStatus: InvoiceStatus | string,
+    opts?: { gatewayTransactionId?: string | null },
+  ) {
+    const nextStatus = this.mapXenditStatus(invoiceStatus as InvoiceStatus);
+    const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!existing) {
+      throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+
+    const becamePaid =
+      existing.statusPayment !== StatusPayment.PAID &&
+      nextStatus === StatusPayment.PAID;
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        statusPayment: nextStatus,
+        gatewayTransactionId:
+          opts?.gatewayTransactionId ?? existing.gatewayTransactionId,
+        paidAt:
+          nextStatus === StatusPayment.PAID
+            ? (existing.paidAt ?? new Date())
+            : existing.paidAt,
+      },
+      include: {
+        documentGuide: { select: orderGuideSelect },
+        user: { select: { email: true } },
+      },
+    });
+
+    if (
+      becamePaid &&
+      !updated.emailDeliveredAt &&
+      updated.user?.email &&
+      updated.documentGuide
+    ) {
+      const locale = updated.currency === "USD" ? "en" : "id";
+      const guideTitle =
+        locale === "en"
+          ? updated.documentGuide.titleEn?.trim() ||
+            updated.documentGuide.titleId
+          : updated.documentGuide.titleId;
+
+      const sent = await this.mail.sendGuidePurchaseEmail({
+        to: updated.user.email,
+        guideTitle,
+        guideId: updated.documentGuide.id,
+        nameDocument: updated.documentGuide.nameDocument,
+        locale,
+      });
+
+      if (sent) {
+        return this.prisma.order.update({
+          where: { id: orderId },
+          data: { emailDeliveredAt: new Date() },
+          include: {
+            documentGuide: { select: orderGuideSelect },
+          },
+        });
+      }
+      this.logger.warn(
+        `Guide email not sent for order ${orderId} (check SMTP/logs)`,
+      );
+    }
+
+    return updated;
+  }
+
+  private readWebhookField(
+    payload: Record<string, unknown>,
+    ...keys: string[]
+  ): string | undefined {
+    for (const key of keys) {
+      const value = payload[key];
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+    }
+    return undefined;
   }
 
   private mapXenditStatus(status: InvoiceStatus): StatusPayment {

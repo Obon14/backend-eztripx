@@ -84,14 +84,26 @@ model City {
 
 model DocumentGuide {
   id                     String                   @id @default(uuid())
-  title                  String
+  titleId                String
+  titleEn                String?
   nameDocument           String
+  tripDays               Int?
   priceIdr               Decimal?                 @db.Decimal(15, 2)
   priceUsd               Decimal?                 @db.Decimal(15, 2)
   tagDocumentDestination TagDocumentDestination[]
+  coverImages            DocumentGuideImage[]
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   order                  Order[]
+}
+
+model DocumentGuideImage {
+  id              String        @id @default(uuid())
+  documentGuideId String
+  documentGuide   DocumentGuide @relation(fields: [documentGuideId], references: [id], onDelete: Cascade)
+  filename        String
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
 }
 
 model TagDocumentDestination {
@@ -119,6 +131,7 @@ model Order {
   gatewayTransactionId String?
   paymentUrl           String?
   paidAt               DateTime?
+  emailDeliveredAt     DateTime?
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   documentGuide        DocumentGuide   @relation(fields: [documentGuideId], references: [id])

@@ -10,14 +10,17 @@ import {
   Query,
   Res,
   StreamableFile,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { DocumentGuideService } from "./document-guide.service";
-import { documentGuideMulterDiskStorage } from "./document-guide.storage";
+import {
+  documentGuideMulterDiskStorage,
+  getMaxCoverImages,
+} from "./document-guide.storage";
 import { JwtGuard } from "../auth/guard/jwt.guard";
 import { RoleGuard } from "../auth/guard/role.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -38,15 +41,27 @@ export class DocumentGuideController {
   @Post()
   @Roles(RoleEnums.ADMIN)
   @UseInterceptors(
-    FileInterceptor("document", {
-      storage: documentGuideMulterDiskStorage(),
-    }),
+    FileFieldsInterceptor(
+      [
+        { name: "document", maxCount: 1 },
+        { name: "coverImages", maxCount: getMaxCoverImages() },
+      ],
+      { storage: documentGuideMulterDiskStorage() },
+    ),
   )
   create(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      document?: Express.Multer.File[];
+      coverImages?: Express.Multer.File[];
+    },
     @Body() body: Record<string, string>,
   ) {
-    return this.documentGuideService.create(file, body);
+    return this.documentGuideService.create(
+      files.document?.[0],
+      files.coverImages ?? [],
+      body,
+    );
   }
 
   @Get()
@@ -63,7 +78,7 @@ export class DocumentGuideController {
     await this.orderService.assertUserCanAccessGuide(
       id,
       user.id,
-      String(user.role),
+      user.role,
     );
     const { stream, filename } =
       await this.documentGuideService.getPreviewStream(id);
@@ -84,7 +99,7 @@ export class DocumentGuideController {
     await this.orderService.assertUserCanAccessGuide(
       id,
       user.id,
-      String(user.role),
+      user.role,
     );
     const { stream, filename } =
       await this.documentGuideService.getPreviewStream(id);
@@ -106,16 +121,29 @@ export class DocumentGuideController {
   @Patch(":id")
   @Roles(RoleEnums.ADMIN)
   @UseInterceptors(
-    FileInterceptor("document", {
-      storage: documentGuideMulterDiskStorage(),
-    }),
+    FileFieldsInterceptor(
+      [
+        { name: "document", maxCount: 1 },
+        { name: "coverImages", maxCount: getMaxCoverImages() },
+      ],
+      { storage: documentGuideMulterDiskStorage() },
+    ),
   )
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File | undefined,
+    @UploadedFiles()
+    files: {
+      document?: Express.Multer.File[];
+      coverImages?: Express.Multer.File[];
+    },
     @Body() body: Record<string, string>,
   ) {
-    return this.documentGuideService.update(id, file, body);
+    return this.documentGuideService.update(
+      id,
+      files.document?.[0],
+      files.coverImages ?? [],
+      body,
+    );
   }
 
   @Delete(":id")

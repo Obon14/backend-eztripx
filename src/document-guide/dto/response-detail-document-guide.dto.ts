@@ -1,4 +1,5 @@
 import { Prisma } from "../../../generated/prisma/client";
+import { buildPublicCoverImageUrl } from "../document-guide.storage";
 
 export class ResponseDetailTagDto {
   id: number;
@@ -19,10 +20,20 @@ export class ResponseDetailTagDto {
   }
 }
 
+export type AdminCoverImageItem = {
+  id: string;
+  filename: string;
+  sortOrder: number;
+  url: string;
+};
+
 export class ResponseDetailDocumentGuideDto {
   id: string;
-  title: string;
+  titleId: string;
+  titleEn: string | null;
   nameDocument: string;
+  tripDays: number | null;
+  coverImages: AdminCoverImageItem[];
   priceIdr: string | null;
   priceUsd: string | null;
   createdAt: Date;
@@ -31,8 +42,10 @@ export class ResponseDetailDocumentGuideDto {
 
   constructor(row: {
     id: string;
-    title: string;
+    titleId: string;
+    titleEn: string | null;
     nameDocument: string;
+    tripDays: number | null;
     priceIdr: Prisma.Decimal | null;
     priceUsd: Prisma.Decimal | null;
     createdAt: Date;
@@ -46,10 +59,25 @@ export class ResponseDetailDocumentGuideDto {
       country: { id: number; name: string } | null;
       city: { id: number; name: string } | null;
     }>;
+    coverImages: Array<{
+      id: string;
+      filename: string;
+      sortOrder: number;
+    }>;
   }) {
     this.id = row.id;
-    this.title = row.title;
+    this.titleId = row.titleId;
+    this.titleEn = row.titleEn;
     this.nameDocument = row.nameDocument;
+    this.tripDays = row.tripDays;
+    this.coverImages = [...row.coverImages]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((img) => ({
+        id: img.id,
+        filename: img.filename,
+        sortOrder: img.sortOrder,
+        url: buildPublicCoverImageUrl(row.id, img.id),
+      }));
     this.priceIdr = row.priceIdr?.toString() ?? null;
     this.priceUsd = row.priceUsd?.toString() ?? null;
     this.createdAt = row.createdAt;

@@ -2,11 +2,13 @@ import { Prisma, StatusPayment } from "../../../generated/prisma/client";
 
 export class ResponseOrderDocumentGuideDto {
   id: string;
-  title: string;
+  titleId: string;
+  titleEn: string | null;
 
-  constructor(row: { id: string; title: string }) {
+  constructor(row: { id: string; titleId: string; titleEn: string | null }) {
     this.id = row.id;
-    this.title = row.title;
+    this.titleId = row.titleId;
+    this.titleEn = row.titleEn;
   }
 }
 
@@ -19,6 +21,7 @@ export class ResponseOrderDto {
   paymentUrl: string | null;
   gatewayTransactionId: string | null;
   paidAt: Date | null;
+  emailDeliveredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   documentGuide: ResponseOrderDocumentGuideDto;
@@ -33,9 +36,10 @@ export class ResponseOrderDto {
       paymentUrl: string | null;
       gatewayTransactionId: string | null;
       paidAt: Date | null;
+      emailDeliveredAt?: Date | null;
       createdAt: Date;
       updatedAt: Date;
-      documentGuide: { id: string; title: string };
+      documentGuide: { id: string; titleId: string; titleEn: string | null };
     },
   ) {
     this.id = row.id;
@@ -46,6 +50,7 @@ export class ResponseOrderDto {
     this.paymentUrl = row.paymentUrl;
     this.gatewayTransactionId = row.gatewayTransactionId;
     this.paidAt = row.paidAt;
+    this.emailDeliveredAt = row.emailDeliveredAt ?? null;
     this.createdAt = row.createdAt;
     this.updatedAt = row.updatedAt;
     this.documentGuide = new ResponseOrderDocumentGuideDto(row.documentGuide);

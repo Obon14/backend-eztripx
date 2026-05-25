@@ -1,9 +1,12 @@
 import {
   IsArray,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateNested,
   ArrayMinSize,
 } from "class-validator";
@@ -13,7 +16,11 @@ import { TagDocumentDestinationItemDto } from "./tag-document-destination-item.d
 export class CreateDocumentGuideDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  titleId: string;
+
+  @IsOptional()
+  @IsString()
+  titleEn?: string;
 
   @IsOptional()
   @IsNumber()
@@ -24,6 +31,13 @@ export class CreateDocumentGuideDto {
   @IsNumber()
   @Type(() => Number)
   priceUsd?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  @Type(() => Number)
+  tripDays?: number;
 
   @IsArray()
   @ArrayMinSize(1)

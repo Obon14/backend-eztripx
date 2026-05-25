@@ -10,6 +10,8 @@ import { CountryModule } from './country/country.module';
 import { CityModule } from './city/city.module';
 import { DocumentGuideModule } from './document-guide/document-guide.module';
 import { OrderModule } from './order/order.module';
+import { UserModule } from './user/user.module';
+import { GeoModule } from './geo/geo.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { OrderModule } from './order/order.module';
     CityModule,
     DocumentGuideModule,
     OrderModule,
+    UserModule,
+    GeoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
