@@ -2,10 +2,10 @@ import "dotenv/config";
 import * as bcrypt from "bcrypt";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import { Role } from "../generated/prisma/enums";
+import { createPgPool } from "../src/prisma/pg-pool";
 
 /** Rows per createMany to stay under Postgres parameter limits */
 const CITY_BATCH = 2500;
@@ -41,7 +41,7 @@ function createPrisma() {
   if (!connectionString) {
     throw new Error("DATABASE_URL is required (e.g. in .env)");
   }
-  const pool = new Pool({ connectionString });
+  const pool = createPgPool(connectionString);
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
   return { prisma, pool };

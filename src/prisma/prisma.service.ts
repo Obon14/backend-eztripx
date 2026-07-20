@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from "../../generated/prisma/client";
+import { createPgPool } from "./pg-pool";
 
 @Injectable()
 export class PrismaService  extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -13,8 +13,7 @@ export class PrismaService  extends PrismaClient implements OnModuleInit, OnModu
     const connectTimeoutMs = Number(
       process.env.DATABASE_CONNECT_TIMEOUT_MS ?? 10_000,
     );
-    const pool = new Pool({
-      connectionString,
+    const pool = createPgPool(connectionString, {
       connectionTimeoutMillis: Number.isFinite(connectTimeoutMs)
         ? connectTimeoutMs
         : 10_000,
