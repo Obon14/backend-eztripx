@@ -14,6 +14,11 @@ export class PublicDocumentGuideQueryDto extends PaginationSearchQueryDto {
   @IsIn(["id", "en"])
   locale?: "id" | "en";
 
+  /** `popular` = PAID order count desc, then newest. Default / `newest` = createdAt desc. */
+  @IsOptional()
+  @IsIn(["popular", "newest"])
+  sort?: "popular" | "newest";
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { validateOrReject } from "class-validator";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma, StatusPayment } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   ErrorMessages,
@@ -219,22 +219,28 @@ export class DocumentGuideService {
     const where: Prisma.DocumentGuideWhereInput =
       and.length > 0 ? { AND: and } : {};
 
+    const publicInclude = {
+      tagDocumentDestination: {
+        include: {
+          region: { select: { name: true } },
+          country: { select: { name: true } },
+          city: { select: { name: true } },
+        },
+      },
+      coverImages: { orderBy: { sortOrder: "asc" as const } },
+    };
+
+    if (query.sort === "popular") {
+      return this.findAllPublicPopular(where, page, skip, limit, locale);
+    }
+
     const [rows, total] = await Promise.all([
       this.prisma.documentGuide.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
-        include: {
-          tagDocumentDestination: {
-            include: {
-              region: { select: { name: true } },
-              country: { select: { name: true } },
-              city: { select: { name: true } },
-            },
-          },
-          coverImages: { orderBy: { sortOrder: "asc" } },
-        },
+        include: publicInclude,
       }),
       this.prisma.documentGuide.count({ where }),
     ]);
@@ -247,6 +253,85 @@ export class DocumentGuideService {
         total,
         totalPages: Math.ceil(total / limit) || 1,
       },
+    };
+  }
+
+  /**
+   * Rank by PAID order count (desc), then createdAt (desc) as fallback for ties / zero sales.
+   */
+  private async findAllPublicPopular(
+    where: Prisma.DocumentGuideWhereInput,
+    page: number,
+    skip: number,
+    limit: number,
+    locale: "id" | "en" | undefined,
+  ) {
+    const candidates = await this.prisma.documentGuide.findMany({
+      where,
+      select: { id: true, createdAt: true },
+    });
+
+    const total = candidates.length;
+    const meta = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+
+    if (total === 0) {
+      return { data: [], meta };
+    }
+
+    const paidCounts = await this.prisma.order.groupBy({
+      by: ["documentGuideId"],
+      where: {
+        statusPayment: StatusPayment.PAID,
+        documentGuideId: { in: candidates.map((g) => g.id) },
+      },
+      _count: { _all: true },
+    });
+
+    const countByGuideId = new Map(
+      paidCounts.map((row) => [row.documentGuideId, row._count._all]),
+    );
+
+    candidates.sort((a, b) => {
+      const countA = countByGuideId.get(a.id) ?? 0;
+      const countB = countByGuideId.get(b.id) ?? 0;
+      if (countB !== countA) return countB - countA;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
+    const pageIds = candidates.slice(skip, skip + limit).map((g) => g.id);
+    if (pageIds.length === 0) {
+      return { data: [], meta };
+    }
+
+    const rows = await this.prisma.documentGuide.findMany({
+      where: { id: { in: pageIds } },
+      include: {
+        tagDocumentDestination: {
+          include: {
+            region: { select: { name: true } },
+            country: { select: { name: true } },
+            city: { select: { name: true } },
+          },
+        },
+        coverImages: { orderBy: { sortOrder: "asc" as const } },
+      },
+    });
+
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const ordered = pageIds
+      .map((id) => byId.get(id))
+      .filter((row): row is NonNullable<typeof row> => row != null);
+
+    return {
+      data: ordered.map(
+        (row) => new ResponsePublicDocumentGuideDto(row, locale),
+      ),
+      meta,
     };
   }
 

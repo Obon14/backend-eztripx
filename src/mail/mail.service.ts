@@ -15,20 +15,18 @@ export type SendGuidePurchaseEmailParams = {
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  private isConfigured(): boolean {
-    return Boolean(
-      process.env.SMTP_HOST?.trim() &&
-        process.env.SMTP_USER?.trim() &&
-        process.env.MAIL_FROM?.trim(),
-    );
+  private getMissingRequiredEnv(): string[] {
+    const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_FROM"] as const;
+    return required.filter((key) => !process.env[key]?.trim());
   }
 
   async sendGuidePurchaseEmail(
     params: SendGuidePurchaseEmailParams,
   ): Promise<boolean> {
-    if (!this.isConfigured()) {
+    const missingEnv = this.getMissingRequiredEnv();
+    if (missingEnv.length > 0) {
       this.logger.warn(
-        "SMTP not configured — skipping guide purchase email",
+        `SMTP not configured (${missingEnv.join(", ")}) — skipping guide purchase email`,
       );
       return false;
     }
@@ -52,6 +50,9 @@ export class MailService {
     const port = Number(process.env.SMTP_PORT ?? 587);
     const secure =
       process.env.SMTP_SECURE === "true" || port === 465;
+    // Gmail app passwords are often pasted with spaces — strip them for auth.
+    const smtpPass =
+      process.env.SMTP_PASS?.trim().replace(/\s+/g, "") ?? "";
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST!.trim(),
@@ -59,7 +60,7 @@ export class MailService {
       secure,
       auth: {
         user: process.env.SMTP_USER!.trim(),
-        pass: process.env.SMTP_PASS?.trim() ?? "",
+        pass: smtpPass,
       },
     });
 
