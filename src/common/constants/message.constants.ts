@@ -26,6 +26,9 @@ export const ErrorMessages = {
   DOCUMENT_GUIDE_INVALID_TAG: 'Invalid region, country, or city for a tag',
   DOCUMENT_GUIDE_NOTHING_TO_UPDATE: 'No fields or file provided to update',
   DOCUMENT_GUIDE_INVALID_PRICE: 'Invalid price value',
+  DOCUMENT_GUIDE_INVALID_STATUS: 'Status must be draft or published',
+  DOCUMENT_GUIDE_NOT_PUBLISHED:
+    'This document guide is not published yet',
   ORDER_PRICE_UNAVAILABLE:
     'Price is not available for the selected currency on this document guide',
   ORDER_PAYMENT_NOT_INITIATED: 'Payment has not been initiated for this order',

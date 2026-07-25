@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { validateOrReject } from "class-validator";
-import { Prisma, StatusPayment } from "../../generated/prisma/client";
+import { DocumentGuideStatus, Prisma, StatusPayment } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   ErrorMessages,
@@ -85,6 +85,7 @@ export class DocumentGuideService {
         tripDays: dto.tripDays ?? null,
         priceIdr: this.toDecimalOrNull(dto.priceIdr),
         priceUsd: this.toDecimalOrNull(dto.priceUsd),
+        status: dto.status ?? DocumentGuideStatus.draft,
         tagDocumentDestination: {
           create: dto.tags.map((t) => ({
             regionId: t.regionId,
@@ -170,7 +171,9 @@ export class DocumentGuideService {
     const skip = (page - 1) * limit;
     const locale = query.locale;
 
-    const and: Prisma.DocumentGuideWhereInput[] = [];
+    const and: Prisma.DocumentGuideWhereInput[] = [
+      { status: DocumentGuideStatus.published },
+    ];
 
     if (search) {
       and.push({
@@ -216,8 +219,7 @@ export class DocumentGuideService {
       });
     }
 
-    const where: Prisma.DocumentGuideWhereInput =
-      and.length > 0 ? { AND: and } : {};
+    const where: Prisma.DocumentGuideWhereInput = { AND: and };
 
     const publicInclude = {
       tagDocumentDestination: {
@@ -336,8 +338,8 @@ export class DocumentGuideService {
   }
 
   async findOnePublic(id: string, locale?: "id" | "en") {
-    const row = await this.prisma.documentGuide.findUnique({
-      where: { id },
+    const row = await this.prisma.documentGuide.findFirst({
+      where: { id, status: DocumentGuideStatus.published },
       include: {
         tagDocumentDestination: {
           include: {
@@ -428,6 +430,7 @@ export class DocumentGuideService {
       dto.priceIdr !== undefined ||
       dto.priceUsd !== undefined ||
       dto.tripDays !== undefined ||
+      dto.status !== undefined ||
       dto.tags !== undefined ||
       removeCoverIds.length > 0;
     if (!documentFile && coverFiles.length === 0 && !hasBodyUpdate) {
@@ -490,6 +493,7 @@ export class DocumentGuideService {
             dto.priceUsd !== undefined
               ? this.toDecimalOrNull(dto.priceUsd)
               : undefined,
+          status: dto.status !== undefined ? dto.status : undefined,
           ...(dto.tags
             ? {
                 tagDocumentDestination: {
@@ -638,6 +642,14 @@ export class DocumentGuideService {
     return n;
   }
 
+  private parseStatus(raw: string): DocumentGuideStatus {
+    const value = raw.trim().toLowerCase();
+    if (value === DocumentGuideStatus.draft || value === DocumentGuideStatus.published) {
+      return value;
+    }
+    throw new BadRequestException(ErrorMessages.DOCUMENT_GUIDE_INVALID_STATUS);
+  }
+
   private parseOptionalInt(raw: string | undefined): number | null | undefined {
     if (raw === undefined) {
       return undefined;
@@ -718,6 +730,9 @@ export class DocumentGuideService {
     }
     if (body.tripDays !== undefined) {
       partial.tripDays = this.parseOptionalInt(body.tripDays);
+    }
+    if (body.status !== undefined) {
+      partial.status = this.parseStatus(body.status);
     }
     if (body.tags !== undefined) {
       partial.tags = this.parseTagsJson(body.tags);

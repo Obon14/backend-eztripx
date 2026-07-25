@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
+  DocumentGuideStatus,
   PaymentProvider,
   Prisma,
   StatusPayment,
@@ -48,10 +49,14 @@ export class OrderService {
         titleEn: true,
         priceIdr: true,
         priceUsd: true,
+        status: true,
       },
     });
     if (!guide) {
       throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+    if (guide.status !== DocumentGuideStatus.published) {
+      throw new BadRequestException(ErrorMessages.DOCUMENT_GUIDE_NOT_PUBLISHED);
     }
 
     const existing = await this.resolveExistingOrderBeforeCheckout(

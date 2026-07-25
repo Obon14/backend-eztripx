@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -11,6 +12,7 @@ import {
   ArrayMinSize,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { DocumentGuideStatus } from "../../../generated/prisma/client";
 import { TagDocumentDestinationItemDto } from "./tag-document-destination-item.dto";
 
 export class CreateDocumentGuideDto {
@@ -38,6 +40,10 @@ export class CreateDocumentGuideDto {
   @Max(365)
   @Type(() => Number)
   tripDays?: number;
+
+  @IsOptional()
+  @IsEnum(DocumentGuideStatus)
+  status?: DocumentGuideStatus;
 
   @IsArray()
   @ArrayMinSize(1)

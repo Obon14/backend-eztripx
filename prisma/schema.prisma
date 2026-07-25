@@ -28,6 +28,11 @@ enum PaymentProvider {
   XENDIT
 }
 
+enum DocumentGuideStatus {
+  draft
+  published
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -90,6 +95,7 @@ model DocumentGuide {
   tripDays               Int?
   priceIdr               Decimal?                 @db.Decimal(15, 2)
   priceUsd               Decimal?                 @db.Decimal(15, 2)
+  status                 DocumentGuideStatus      @default(draft)
   tagDocumentDestination TagDocumentDestination[]
   coverImages            DocumentGuideImage[]
   createdAt              DateTime                 @default(now())
