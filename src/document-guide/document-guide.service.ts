@@ -6,7 +6,12 @@ import {
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { validateOrReject } from "class-validator";
-import { DocumentGuideStatus, Prisma, StatusPayment } from "../../generated/prisma/client";
+import {
+  DocumentGuidePreviewMode,
+  DocumentGuideStatus,
+  Prisma,
+  StatusPayment,
+} from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   ErrorMessages,
@@ -32,9 +37,14 @@ import {
   removeGuidePdfFile,
   sanitizePdfBasename,
 } from "./document-guide.storage";
+import {
+  bufferToReadable,
+  buildLimitedPdfBuffer,
+} from "./document-guide-pdf-preview";
 import { ResponsePublicDocumentGuideDto } from "./dto/response-public-document-guide.dto";
 import { PublicDocumentGuideQueryDto } from "./dto/public-document-guide-query.dto";
 import type { ReadStream } from "node:fs";
+import type { Readable } from "node:stream";
 
 const guideInclude = {
   tagDocumentDestination: {
@@ -77,6 +87,12 @@ export class DocumentGuideService {
 
     const nameDocument = sanitizePdfBasename(documentFile.originalname);
 
+    const previewMode = dto.previewMode ?? DocumentGuidePreviewMode.hide;
+    const previewPageCount =
+      previewMode === DocumentGuidePreviewMode.hide
+        ? (dto.previewPageCount ?? 3)
+        : (dto.previewPageCount ?? 3);
+
     const guide = await this.prisma.documentGuide.create({
       data: {
         titleId: dto.titleId.trim(),
@@ -86,6 +102,8 @@ export class DocumentGuideService {
         priceIdr: this.toDecimalOrNull(dto.priceIdr),
         priceUsd: this.toDecimalOrNull(dto.priceUsd),
         status: dto.status ?? DocumentGuideStatus.draft,
+        previewMode,
+        previewPageCount,
         tagDocumentDestination: {
           create: dto.tags.map((t) => ({
             regionId: t.regionId,
@@ -431,6 +449,8 @@ export class DocumentGuideService {
       dto.priceUsd !== undefined ||
       dto.tripDays !== undefined ||
       dto.status !== undefined ||
+      dto.previewMode !== undefined ||
+      dto.previewPageCount !== undefined ||
       dto.tags !== undefined ||
       removeCoverIds.length > 0;
     if (!documentFile && coverFiles.length === 0 && !hasBodyUpdate) {
@@ -455,6 +475,18 @@ export class DocumentGuideService {
     const nameDocument = documentFile
       ? sanitizePdfBasename(documentFile.originalname)
       : existing.nameDocument;
+
+    const nextPreviewMode = dto.previewMode ?? existing.previewMode;
+    let nextPreviewPageCount =
+      dto.previewPageCount !== undefined
+        ? dto.previewPageCount
+        : existing.previewPageCount;
+    if (
+      nextPreviewMode === DocumentGuidePreviewMode.hide &&
+      (nextPreviewPageCount == null || nextPreviewPageCount < 1)
+    ) {
+      nextPreviewPageCount = 3;
+    }
 
     await this.prisma.$transaction(async (tx) => {
       if (dto.tags) {
@@ -494,6 +526,16 @@ export class DocumentGuideService {
               ? this.toDecimalOrNull(dto.priceUsd)
               : undefined,
           status: dto.status !== undefined ? dto.status : undefined,
+          previewMode:
+            dto.previewMode !== undefined ||
+            dto.previewPageCount !== undefined
+              ? nextPreviewMode
+              : undefined,
+          previewPageCount:
+            dto.previewMode !== undefined ||
+            dto.previewPageCount !== undefined
+              ? nextPreviewPageCount
+              : undefined,
           ...(dto.tags
             ? {
                 tagDocumentDestination: {
@@ -568,6 +610,63 @@ export class DocumentGuideService {
       throw new NotFoundException(ErrorMessages.DOCUMENT_GUIDE_FILE_NOT_FOUND);
     }
     return { stream, filename: guide.nameDocument };
+  }
+
+  /**
+   * Public preview (no auth). Published guides only.
+   * - hide → server-truncated PDF (first N pages only; never the full file)
+   * - show → full PDF (admin opted in; intentional business choice)
+   */
+  async getPublicPreviewStream(id: string): Promise<{
+    stream: ReadStream | Readable;
+    filename: string;
+    limited: boolean;
+  }> {
+    const guide = await this.prisma.documentGuide.findFirst({
+      where: { id, status: DocumentGuideStatus.published },
+      select: {
+        id: true,
+        nameDocument: true,
+        previewMode: true,
+        previewPageCount: true,
+      },
+    });
+    if (!guide) {
+      throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+
+    if (guide.previewMode === DocumentGuidePreviewMode.show) {
+      const stream = createPdfReadStream(guide.id, guide.nameDocument);
+      if (!stream) {
+        throw new NotFoundException(ErrorMessages.DOCUMENT_GUIDE_FILE_NOT_FOUND);
+      }
+      return { stream, filename: guide.nameDocument, limited: false };
+    }
+
+    const pageCount = Math.max(1, guide.previewPageCount || 3);
+    try {
+      const { buffer, filename } = await buildLimitedPdfBuffer(
+        guide.id,
+        guide.nameDocument,
+        pageCount,
+      );
+      return {
+        stream: bufferToReadable(buffer),
+        filename,
+        limited: true,
+      };
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        const msg = err.message;
+        if (msg.includes("not found") || msg.includes("Document file")) {
+          throw new NotFoundException(
+            ErrorMessages.DOCUMENT_GUIDE_FILE_NOT_FOUND,
+          );
+        }
+        throw err;
+      }
+      throw new NotFoundException(ErrorMessages.DOCUMENT_GUIDE_FILE_NOT_FOUND);
+    }
   }
 
   private async saveCoverFiles(
@@ -693,16 +792,84 @@ export class DocumentGuideService {
     return n;
   }
 
+  private parsePreviewMode(raw: string | undefined): DocumentGuidePreviewMode {
+    if (raw === undefined || raw.trim() === "") {
+      return DocumentGuidePreviewMode.hide;
+    }
+    const value = raw.trim().toLowerCase();
+    if (
+      value === DocumentGuidePreviewMode.hide ||
+      value === DocumentGuidePreviewMode.show
+    ) {
+      return value;
+    }
+    throw new BadRequestException(
+      'previewMode must be "hide" or "show"',
+    );
+  }
+
+  private parsePreviewModeOptional(
+    raw: string | undefined,
+  ): DocumentGuidePreviewMode | undefined {
+    if (raw === undefined) {
+      return undefined;
+    }
+    return this.parsePreviewMode(raw);
+  }
+
+  private parsePreviewPageCountForCreate(
+    raw: string | undefined,
+    mode: DocumentGuidePreviewMode,
+  ): number | undefined {
+    if (mode === DocumentGuidePreviewMode.show) {
+      return undefined;
+    }
+    if (raw === undefined || raw.trim() === "") {
+      return 3;
+    }
+    const n = Number(raw);
+    if (!Number.isInteger(n) || Number.isNaN(n) || n < 1) {
+      throw new BadRequestException(
+        "previewPageCount must be an integer >= 1",
+      );
+    }
+    return n;
+  }
+
+  private parsePreviewPageCountOptional(
+    raw: string | undefined,
+  ): number | undefined {
+    if (raw === undefined) {
+      return undefined;
+    }
+    if (raw.trim() === "") {
+      return undefined;
+    }
+    const n = Number(raw);
+    if (!Number.isInteger(n) || Number.isNaN(n) || n < 1) {
+      throw new BadRequestException(
+        "previewPageCount must be an integer >= 1",
+      );
+    }
+    return n;
+  }
+
   private async parseAndValidateCreateBody(
     body: Record<string, string | undefined>,
   ): Promise<CreateDocumentGuideDto> {
     const tags = this.parseTagsJson(body.tags);
+    const previewMode = this.parsePreviewMode(body.previewMode);
     const dto = plainToInstance(CreateDocumentGuideDto, {
       titleId: body.titleId ?? body.title,
       titleEn: body.titleEn,
       priceIdr: this.parseOptionalNumberForCreate(body.priceIdr),
       priceUsd: this.parseOptionalNumberForCreate(body.priceUsd),
       tripDays: this.parseOptionalIntForCreate(body.tripDays),
+      previewMode,
+      previewPageCount: this.parsePreviewPageCountForCreate(
+        body.previewPageCount,
+        previewMode,
+      ),
       tags,
     });
     await validateOrReject(dto, {
@@ -734,6 +901,14 @@ export class DocumentGuideService {
     if (body.status !== undefined) {
       partial.status = this.parseStatus(body.status);
     }
+    if (body.previewMode !== undefined) {
+      partial.previewMode = this.parsePreviewModeOptional(body.previewMode);
+    }
+    if (body.previewPageCount !== undefined) {
+      partial.previewPageCount = this.parsePreviewPageCountOptional(
+        body.previewPageCount,
+      );
+    }
     if (body.tags !== undefined) {
       partial.tags = this.parseTagsJson(body.tags);
     }
@@ -744,6 +919,15 @@ export class DocumentGuideService {
     });
     if (dto.tags !== undefined && dto.tags.length < 1) {
       throw new BadRequestException(ErrorMessages.DOCUMENT_GUIDE_TAGS_REQUIRED);
+    }
+    if (
+      dto.previewMode === DocumentGuidePreviewMode.hide &&
+      dto.previewPageCount !== undefined &&
+      dto.previewPageCount < 1
+    ) {
+      throw new BadRequestException(
+        "previewPageCount must be an integer >= 1 when previewMode is hide",
+      );
     }
     return dto;
   }

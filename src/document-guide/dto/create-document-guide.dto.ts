@@ -8,11 +8,15 @@ import {
   IsString,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
   ArrayMinSize,
 } from "class-validator";
 import { Type } from "class-transformer";
-import { DocumentGuideStatus } from "../../../generated/prisma/client";
+import {
+  DocumentGuidePreviewMode,
+  DocumentGuideStatus,
+} from "../../../generated/prisma/client";
 import { TagDocumentDestinationItemDto } from "./tag-document-destination-item.dto";
 
 export class CreateDocumentGuideDto {
@@ -44,6 +48,24 @@ export class CreateDocumentGuideDto {
   @IsOptional()
   @IsEnum(DocumentGuideStatus)
   status?: DocumentGuideStatus;
+
+  /** hide = limited public pages; show = full public PDF. Default hide. */
+  @IsOptional()
+  @IsEnum(DocumentGuidePreviewMode)
+  previewMode?: DocumentGuidePreviewMode;
+
+  /** Required when previewMode is hide (or omitted → hide). Ignored when show. */
+  @ValidateIf(
+    (o: CreateDocumentGuideDto) =>
+      (o.previewMode ?? DocumentGuidePreviewMode.hide) ===
+      DocumentGuidePreviewMode.hide,
+  )
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(999)
+  @Type(() => Number)
+  previewPageCount?: number;
 
   @IsArray()
   @ArrayMinSize(1)

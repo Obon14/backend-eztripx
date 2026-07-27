@@ -1,4 +1,7 @@
-import { Prisma } from "../../../generated/prisma/client";
+import {
+  DocumentGuidePreviewMode,
+  Prisma,
+} from "../../../generated/prisma/client";
 import { buildPublicCoverImageUrl } from "../document-guide.storage";
 
 function buildLocationLabel(
@@ -45,6 +48,9 @@ export class ResponsePublicDocumentGuideDto {
   priceUsd: string | null;
   coverImages: PublicCoverImageItem[];
   locationLabel: string;
+  previewMode: DocumentGuidePreviewMode;
+  /** Meaningful when previewMode = hide; ignored when show. */
+  previewPageCount: number;
 
   constructor(
     row: {
@@ -54,6 +60,8 @@ export class ResponsePublicDocumentGuideDto {
       tripDays: number | null;
       priceIdr: Prisma.Decimal | null;
       priceUsd: Prisma.Decimal | null;
+      previewMode: DocumentGuidePreviewMode;
+      previewPageCount: number;
       tagDocumentDestination: Array<{
         region: { name: string };
         country: { name: string } | null;
@@ -80,5 +88,7 @@ export class ResponsePublicDocumentGuideDto {
         sortOrder: img.sortOrder,
       }));
     this.locationLabel = buildLocationLabel(row.tagDocumentDestination);
+    this.previewMode = row.previewMode;
+    this.previewPageCount = row.previewPageCount;
   }
 }

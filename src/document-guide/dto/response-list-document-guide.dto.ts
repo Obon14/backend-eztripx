@@ -1,4 +1,8 @@
-import { DocumentGuideStatus, Prisma } from "../../../generated/prisma/client";
+import {
+  DocumentGuidePreviewMode,
+  DocumentGuideStatus,
+  Prisma,
+} from "../../../generated/prisma/client";
 import { ResponseDetailTagDto } from "./response-detail-document-guide.dto";
 import { buildPublicCoverImageUrl } from "../document-guide.storage";
 
@@ -12,6 +16,8 @@ export class ResponseListDocumentGuideDto {
   priceIdr: string | null;
   priceUsd: string | null;
   status: DocumentGuideStatus;
+  previewMode: DocumentGuidePreviewMode;
+  previewPageCount: number;
   tags: ResponseDetailTagDto[];
   createdAt: Date;
 
@@ -24,6 +30,8 @@ export class ResponseListDocumentGuideDto {
     priceIdr: Prisma.Decimal | null;
     priceUsd: Prisma.Decimal | null;
     status: DocumentGuideStatus;
+    previewMode: DocumentGuidePreviewMode;
+    previewPageCount: number;
     createdAt: Date;
     tagDocumentDestination: Array<{
       id: number;
@@ -55,6 +63,8 @@ export class ResponseListDocumentGuideDto {
     this.priceIdr = row.priceIdr?.toString() ?? null;
     this.priceUsd = row.priceUsd?.toString() ?? null;
     this.status = row.status;
+    this.previewMode = row.previewMode;
+    this.previewPageCount = row.previewPageCount;
     this.createdAt = row.createdAt;
     this.tags = row.tagDocumentDestination.map(
       (t) => new ResponseDetailTagDto(t),

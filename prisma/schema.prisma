@@ -33,6 +33,12 @@ enum DocumentGuideStatus {
   published
 }
 
+/// Public PDF preview: `hide` = only first N pages; `show` = full document.
+enum DocumentGuidePreviewMode {
+  hide
+  show
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -88,18 +94,22 @@ model City {
 }
 
 model DocumentGuide {
-  id                     String                   @id @default(uuid())
+  id                     String                     @id @default(uuid())
   titleId                String
   titleEn                String?
   nameDocument           String
   tripDays               Int?
-  priceIdr               Decimal?                 @db.Decimal(15, 2)
-  priceUsd               Decimal?                 @db.Decimal(15, 2)
-  status                 DocumentGuideStatus      @default(draft)
+  priceIdr               Decimal?                   @db.Decimal(15, 2)
+  priceUsd               Decimal?                   @db.Decimal(15, 2)
+  status                 DocumentGuideStatus        @default(draft)
+  /// Public preview: hide = limited pages; show = full PDF (public).
+  previewMode            DocumentGuidePreviewMode   @default(hide)
+  /// Used only when previewMode = hide. Default 3.
+  previewPageCount       Int                        @default(3)
   tagDocumentDestination TagDocumentDestination[]
   coverImages            DocumentGuideImage[]
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
   order                  Order[]
 }
 
