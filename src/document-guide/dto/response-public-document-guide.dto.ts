@@ -43,6 +43,7 @@ function resolveTitle(
 export class ResponsePublicDocumentGuideDto {
   id: string;
   title: string;
+  description: string | null;
   tripDays: number | null;
   priceIdr: string | null;
   priceUsd: string | null;
@@ -57,6 +58,7 @@ export class ResponsePublicDocumentGuideDto {
       id: string;
       titleId: string;
       titleEn: string | null;
+      description: string | null;
       tripDays: number | null;
       priceIdr: Prisma.Decimal | null;
       priceUsd: Prisma.Decimal | null;
@@ -77,6 +79,7 @@ export class ResponsePublicDocumentGuideDto {
   ) {
     this.id = row.id;
     this.title = resolveTitle(locale, row.titleId, row.titleEn);
+    this.description = row.description?.trim() || null;
     this.tripDays = row.tripDays;
     this.priceIdr = row.priceIdr?.toString() ?? null;
     this.priceUsd = row.priceUsd?.toString() ?? null;

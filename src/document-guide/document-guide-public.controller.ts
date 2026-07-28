@@ -20,6 +20,12 @@ export class DocumentGuidePublicController {
     return this.documentGuideService.findAllPublic(query);
   }
 
+  /** Adventure map pins for landing page (published guides with resolvable coords). */
+  @Get("map-pins")
+  findMapPins(@Query("locale") locale?: "id" | "en") {
+    return this.documentGuideService.findPublicMapPins(locale);
+  }
+
   @Get(":id/cover/:imageId")
   async coverById(
     @Param("id", ParseUUIDPipe) id: string,

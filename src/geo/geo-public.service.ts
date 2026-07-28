@@ -91,9 +91,17 @@ export class GeoPublicService {
     const countryIds =
       query.countryIds ??
       (query.countryId != null ? [query.countryId] : undefined);
+    const regionIds =
+      query.regionIds ??
+      (query.regionId != null ? [query.regionId] : undefined);
 
+    // Prefer explicit countries; otherwise scope cities to countries in selected regions.
     const where: Prisma.CityWhereInput = {
-      ...(countryIds?.length ? { countryId: { in: countryIds } } : {}),
+      ...(countryIds?.length
+        ? { countryId: { in: countryIds } }
+        : regionIds?.length
+          ? { country: { regionId: { in: regionIds } } }
+          : {}),
       ...(search
         ? { name: { contains: search, mode: "insensitive" } }
         : {}),

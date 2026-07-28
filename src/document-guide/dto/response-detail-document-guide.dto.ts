@@ -35,6 +35,7 @@ export class ResponseDetailDocumentGuideDto {
   id: string;
   titleId: string;
   titleEn: string | null;
+  description: string | null;
   nameDocument: string;
   tripDays: number | null;
   coverImages: AdminCoverImageItem[];
@@ -51,6 +52,7 @@ export class ResponseDetailDocumentGuideDto {
     id: string;
     titleId: string;
     titleEn: string | null;
+    description: string | null;
     nameDocument: string;
     tripDays: number | null;
     priceIdr: Prisma.Decimal | null;
@@ -78,6 +80,7 @@ export class ResponseDetailDocumentGuideDto {
     this.id = row.id;
     this.titleId = row.titleId;
     this.titleEn = row.titleEn;
+    this.description = row.description;
     this.nameDocument = row.nameDocument;
     this.tripDays = row.tripDays;
     this.coverImages = [...row.coverImages]

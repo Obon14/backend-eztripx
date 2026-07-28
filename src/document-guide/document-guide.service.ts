@@ -26,6 +26,7 @@ import { ResponseDetailDocumentGuideDto } from "./dto/response-detail-document-g
 import {
   assertCoverImageFile,
   assertPdfFile,
+  buildPublicCoverImageUrl,
   createCoverReadStream,
   createPdfReadStream,
   getCoverContentType,
@@ -41,7 +42,9 @@ import {
   bufferToReadable,
   buildLimitedPdfBuffer,
 } from "./document-guide-pdf-preview";
+import { resolveFallbackCoords } from "./map-pin-coords";
 import { ResponsePublicDocumentGuideDto } from "./dto/response-public-document-guide.dto";
+import type { PublicMapPinDto } from "./dto/response-public-map-pin.dto";
 import { PublicDocumentGuideQueryDto } from "./dto/public-document-guide-query.dto";
 import type { ReadStream } from "node:fs";
 import type { Readable } from "node:stream";
@@ -97,6 +100,7 @@ export class DocumentGuideService {
       data: {
         titleId: dto.titleId.trim(),
         titleEn: dto.titleEn?.trim() || null,
+        description: dto.description?.trim() || null,
         nameDocument,
         tripDays: dto.tripDays ?? null,
         priceIdr: this.toDecimalOrNull(dto.priceIdr),
@@ -375,6 +379,152 @@ export class DocumentGuideService {
     return new ResponsePublicDocumentGuideDto(row, locale);
   }
 
+  /**
+   * Adventure map pins: published guides grouped by city (preferred) or country.
+   * Coords from DB lat/lng, with name-based fallback for Phase 1.
+   */
+  async findPublicMapPins(locale?: "id" | "en"): Promise<{ data: PublicMapPinDto[] }> {
+    const tags = await this.prisma.tagDocumentDestination.findMany({
+      where: { documentGuide: { status: DocumentGuideStatus.published } },
+      include: {
+        city: {
+          select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+        country: {
+          select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+        documentGuide: {
+          select: {
+            id: true,
+            titleId: true,
+            titleEn: true,
+            tripDays: true,
+            coverImages: {
+              orderBy: { sortOrder: "asc" },
+              take: 1,
+              select: { id: true },
+            },
+          },
+        },
+      },
+    });
+
+    type Acc = {
+      label: string;
+      lat: number;
+      lng: number;
+      kind: "city" | "country";
+      guides: Map<
+        string,
+        {
+          id: string;
+          title: string;
+          tripDays: number | null;
+          coverUrl: string | null;
+        }
+      >;
+    };
+
+    const pins = new Map<string, Acc>();
+
+    for (const tag of tags) {
+      const guide = tag.documentGuide;
+      const title =
+        locale === "en"
+          ? guide.titleEn?.trim() || guide.titleId
+          : guide.titleId;
+
+      let pinKey: string | null = null;
+      let label = "";
+      let kind: "city" | "country" = "country";
+      let lat: number | null = null;
+      let lng: number | null = null;
+
+      if (tag.city) {
+        pinKey = `city:${tag.city.id}`;
+        label = tag.city.name;
+        kind = "city";
+        if (tag.city.latitude != null && tag.city.longitude != null) {
+          lat = tag.city.latitude;
+          lng = tag.city.longitude;
+        } else {
+          const fb = resolveFallbackCoords(tag.city.name, tag.country?.name);
+          if (fb) {
+            lat = fb.lat;
+            lng = fb.lng;
+          }
+        }
+      } else if (tag.country) {
+        pinKey = `country:${tag.country.id}`;
+        label = tag.country.name;
+        kind = "country";
+        if (tag.country.latitude != null && tag.country.longitude != null) {
+          lat = tag.country.latitude;
+          lng = tag.country.longitude;
+        } else {
+          const fb = resolveFallbackCoords(tag.country.name);
+          if (fb) {
+            lat = fb.lat;
+            lng = fb.lng;
+          }
+        }
+      }
+
+      if (!pinKey || lat == null || lng == null) continue;
+
+      let acc = pins.get(pinKey);
+      if (!acc) {
+        acc = {
+          label,
+          lat,
+          lng,
+          kind,
+          guides: new Map(),
+        };
+        pins.set(pinKey, acc);
+      }
+
+      if (!acc.guides.has(guide.id)) {
+        const coverId = guide.coverImages[0]?.id ?? null;
+        acc.guides.set(guide.id, {
+          id: guide.id,
+          title,
+          tripDays: guide.tripDays,
+          coverUrl: coverId
+            ? buildPublicCoverImageUrl(guide.id, coverId)
+            : null,
+        });
+      }
+    }
+
+    const data: PublicMapPinDto[] = [...pins.entries()]
+      .map(([id, acc]) => {
+        const guides = [...acc.guides.values()].slice(0, 5);
+        return {
+          id,
+          label: acc.label,
+          lat: acc.lat,
+          lng: acc.lng,
+          kind: acc.kind,
+          guideCount: acc.guides.size,
+          guides,
+        };
+      })
+      .sort((a, b) => b.guideCount - a.guideCount);
+
+    return { data };
+  }
+
   async getCoverStreamByImageId(
     guideId: string,
     imageId: string,
@@ -445,6 +595,7 @@ export class DocumentGuideService {
     const hasBodyUpdate =
       dto.titleId !== undefined ||
       dto.titleEn !== undefined ||
+      dto.description !== undefined ||
       dto.priceIdr !== undefined ||
       dto.priceUsd !== undefined ||
       dto.tripDays !== undefined ||
@@ -514,6 +665,10 @@ export class DocumentGuideService {
           titleEn:
             dto.titleEn !== undefined
               ? dto.titleEn?.trim() || null
+              : undefined,
+          description:
+            dto.description !== undefined
+              ? dto.description?.trim() || null
               : undefined,
           nameDocument: documentFile ? nameDocument : undefined,
           tripDays: dto.tripDays !== undefined ? dto.tripDays : undefined,
@@ -862,6 +1017,7 @@ export class DocumentGuideService {
     const dto = plainToInstance(CreateDocumentGuideDto, {
       titleId: body.titleId ?? body.title,
       titleEn: body.titleEn,
+      description: body.description,
       priceIdr: this.parseOptionalNumberForCreate(body.priceIdr),
       priceUsd: this.parseOptionalNumberForCreate(body.priceUsd),
       tripDays: this.parseOptionalIntForCreate(body.tripDays),
@@ -888,6 +1044,9 @@ export class DocumentGuideService {
     }
     if (body.titleEn !== undefined) {
       partial.titleEn = body.titleEn;
+    }
+    if (body.description !== undefined) {
+      partial.description = body.description;
     }
     if (body.priceIdr !== undefined) {
       partial.priceIdr = this.parseOptionalNumber(body.priceIdr);

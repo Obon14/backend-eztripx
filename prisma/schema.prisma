@@ -76,6 +76,9 @@ model Country {
   name                   String
   regionId               Int
   region                 Region                   @relation(fields: [regionId], references: [id])
+  /// Optional map pin (Phase 1 adventure map).
+  latitude               Float?
+  longitude              Float?
   city                   City[]
   tagDocumentDestination TagDocumentDestination[]
   user                   User[]
@@ -88,6 +91,9 @@ model City {
   name                   String
   countryId              Int
   country                Country                  @relation(fields: [countryId], references: [id])
+  /// Optional map pin (Phase 1 adventure map).
+  latitude               Float?
+  longitude              Float?
   tagDocumentDestination TagDocumentDestination[]
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
@@ -97,6 +103,8 @@ model DocumentGuide {
   id                     String                     @id @default(uuid())
   titleId                String
   titleEn                String?
+  /// Optional short description shown on public cards.
+  description            String?
   nameDocument           String
   tripDays               Int?
   priceIdr               Decimal?                   @db.Decimal(15, 2)

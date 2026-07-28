@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
   ValidateIf,
   ValidateNested,
@@ -27,6 +28,12 @@ export class CreateDocumentGuideDto {
   @IsOptional()
   @IsString()
   titleEn?: string;
+
+  /** Optional public card description. Empty string clears to null on update. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
 
   @IsOptional()
   @IsNumber()

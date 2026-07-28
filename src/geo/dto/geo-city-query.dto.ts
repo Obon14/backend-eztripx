@@ -18,4 +18,15 @@ export class GeoCityQueryDto extends PaginationSearchQueryDto {
   @IsOptional()
   @Transform(({ value }) => toIdList(value))
   countryIds?: number[];
+
+  /** When set (and no countryIds), cities are limited to countries in these regions. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  regionId?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => toIdList(value))
+  regionIds?: number[];
 }
