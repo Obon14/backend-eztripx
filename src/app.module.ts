@@ -12,6 +12,7 @@ import { DocumentGuideModule } from './document-guide/document-guide.module';
 import { OrderModule } from './order/order.module';
 import { UserModule } from './user/user.module';
 import { GeoModule } from './geo/geo.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { GeoModule } from './geo/geo.module';
     OrderModule,
     UserModule,
     GeoModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
