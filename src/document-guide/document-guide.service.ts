@@ -43,6 +43,7 @@ import {
   buildLimitedPdfBuffer,
 } from "./document-guide-pdf-preview";
 import { resolveFallbackCoords } from "./map-pin-coords";
+import { GeoCoordsService } from "../geo/geo-coords.service";
 import { ResponsePublicDocumentGuideDto } from "./dto/response-public-document-guide.dto";
 import type { PublicMapPinDto } from "./dto/response-public-map-pin.dto";
 import { PublicDocumentGuideQueryDto } from "./dto/public-document-guide-query.dto";
@@ -64,7 +65,10 @@ const guideInclude = {
 
 @Injectable()
 export class DocumentGuideService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly geoCoordsService: GeoCoordsService,
+  ) {}
 
   async create(
     documentFile: Express.Multer.File | undefined,
@@ -131,6 +135,13 @@ export class DocumentGuideService {
       await this.prisma.documentGuide.delete({ where: { id: guide.id } });
       throw err;
     }
+
+    await this.geoCoordsService.ensureCoordsForTagRefs(
+      dto.tags.map((t) => ({
+        countryId: t.countryId ?? null,
+        cityId: t.cityId ?? null,
+      })),
+    );
 
     return this.findOne(guide.id);
   }
@@ -384,6 +395,12 @@ export class DocumentGuideService {
    * Coords from DB lat/lng, with name-based fallback for Phase 1.
    */
   async findPublicMapPins(locale?: "id" | "en"): Promise<{ data: PublicMapPinDto[] }> {
+    const tagRefs = await this.prisma.tagDocumentDestination.findMany({
+      where: { documentGuide: { status: DocumentGuideStatus.published } },
+      select: { countryId: true, cityId: true },
+    });
+    await this.geoCoordsService.ensureCoordsForTagRefs(tagRefs);
+
     const tags = await this.prisma.tagDocumentDestination.findMany({
       where: { documentGuide: { status: DocumentGuideStatus.published } },
       include: {
@@ -713,6 +730,15 @@ export class DocumentGuideService {
 
     if (coverFiles.length > 0) {
       await this.saveCoverFiles(id, coverFiles);
+    }
+
+    if (dto.tags) {
+      await this.geoCoordsService.ensureCoordsForTagRefs(
+        dto.tags.map((t) => ({
+          countryId: t.countryId ?? null,
+          cityId: t.cityId ?? null,
+        })),
+      );
     }
 
     return this.findOne(id);

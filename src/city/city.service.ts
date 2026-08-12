@@ -6,6 +6,7 @@ import {
 import { CreateCityDto } from "./dto/create-city.dto";
 import { UpdateCityDto } from "./dto/update-city.dto";
 import { PrismaService } from "../prisma/prisma.service";
+import { GeoCoordsService } from "../geo/geo-coords.service";
 import { City, Prisma } from "../../generated/prisma/client";
 import { ErrorMessages } from "../common/constants/message.constants";
 import { PaginationSearchQueryDto } from "../common/dto/pagination-search-query.dto";
@@ -14,19 +15,23 @@ import { ResponseListCityDto } from "./dto/response-list-city.dto";
 @Injectable()
 export class CityService {
   constructor(
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private readonly geoCoordsService: GeoCoordsService,
   ) {}
 
   async create(req: CreateCityDto) {
     const cekName = await this.findByName(req.name);
     if (cekName) throw new ConflictException(ErrorMessages.DATA_ALREADY_EXISTS);
 
-    return this.prisma.city.create({
+    const city = await this.prisma.city.create({
       data: {
         name: req.name,
         countryId: req.countryId,
       },
     });
+
+    await this.geoCoordsService.ensureCityCoords(city.id);
+    return this.prisma.city.findUnique({ where: { id: city.id } });
   }
 
   async findAll(query: PaginationSearchQueryDto) {
@@ -107,6 +112,9 @@ export class CityService {
     return this.prisma.city.update({
       where: { id },
       data: updateData,
+    }).then(async (updated) => {
+      await this.geoCoordsService.ensureCityCoords(updated.id);
+      return this.prisma.city.findUnique({ where: { id: updated.id } });
     });
   }
 

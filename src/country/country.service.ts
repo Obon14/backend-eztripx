@@ -6,6 +6,7 @@ import {
 import { CreateCountryDto } from "./dto/create-country.dto";
 import { UpdateCountryDto } from "./dto/update-country.dto";
 import { PrismaService } from "../prisma/prisma.service";
+import { GeoCoordsService } from "../geo/geo-coords.service";
 import { Country, Prisma } from "../../generated/prisma/client";
 import { ErrorMessages } from "../common/constants/message.constants";
 import { PaginationSearchQueryDto } from "../common/dto/pagination-search-query.dto";
@@ -14,19 +15,23 @@ import { ResponseListCountryDto } from "./dto/response-list-country.dto";
 @Injectable()
 export class CountryService {
   constructor(
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private readonly geoCoordsService: GeoCoordsService,
   ) {}
 
   async create(req: CreateCountryDto) {
     const cekName = await this.findByName(req.name);
     if (cekName) throw new ConflictException(ErrorMessages.DATA_ALREADY_EXISTS);
 
-    return this.prisma.country.create({
+    const country = await this.prisma.country.create({
       data: {
         name: req.name,
         regionId: req.regionId,
       },
     });
+
+    await this.geoCoordsService.ensureCountryCoords(country.id);
+    return this.prisma.country.findUnique({ where: { id: country.id } });
   }
 
   async findAll(query: PaginationSearchQueryDto) {
@@ -107,6 +112,9 @@ export class CountryService {
     return this.prisma.country.update({
       where: { id },
       data: updateData,
+    }).then(async (updated) => {
+      await this.geoCoordsService.ensureCountryCoords(updated.id);
+      return this.prisma.country.findUnique({ where: { id: updated.id } });
     });
   }
 

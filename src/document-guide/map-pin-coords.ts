@@ -44,6 +44,9 @@ const FALLBACK_COORDS: Record<string, { lat: number; lng: number }> = {
   egypt: { lat: 26.82, lng: 30.8 },
   morocco: { lat: 31.79, lng: -7.09 },
   "south africa": { lat: -30.56, lng: 22.94 },
+  armenia: { lat: 40.07, lng: 45.04 },
+  georgia: { lat: 42.32, lng: 43.36 },
+  azerbaijan: { lat: 40.14, lng: 47.58 },
 
   // Cities (common travel hubs)
   jakarta: { lat: -6.2088, lng: 106.8456 },
