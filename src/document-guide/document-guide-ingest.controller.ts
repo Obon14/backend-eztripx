@@ -17,10 +17,10 @@ import {
 import { DocumentGuideIngestThrottle } from "../common/constants/throttle.constants";
 
 /**
- * Machine ingest: create document guide with a static API key (no JWT / web login).
- * POST /document-guide/ingest
+ * Machine REST create (static API key, no JWT / web login).
+ * POST /api/document-guides — multipart. Distinct from admin `/document-guide`.
  */
-@Controller("document-guide/ingest")
+@Controller("api/document-guides")
 @UseGuards(ThrottlerGuard, DocumentGuideIngestGuard)
 export class DocumentGuideIngestController {
   constructor(private readonly documentGuideService: DocumentGuideService) {}
