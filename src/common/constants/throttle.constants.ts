@@ -5,3 +5,7 @@ export const AuthThrottle = {
   refresh: { default: { limit: 30, ttl: 60_000 } },
   authenticated: { default: { limit: 60, ttl: 60_000 } },
 } as const;
+
+export const DocumentGuideIngestThrottle = {
+  create: { default: { limit: 20, ttl: 60_000 } },
+} as const;
