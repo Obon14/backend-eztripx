@@ -38,6 +38,9 @@ export const ErrorMessages = {
     'You have already purchased this document guide',
   ORDER_PENDING_EXISTS:
     'An unpaid order already exists for this document guide',
+  REVIEW_ALREADY_EXISTS: 'You have already reviewed this document guide',
+  REVIEW_COMMENT_REQUIRED: 'Please write a short review comment',
+  REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',
   USER_HAS_ORDERS: 'Cannot delete user because they have related orders',
   USER_CANNOT_DELETE_SELF: 'You cannot delete your own account',
 } as const;

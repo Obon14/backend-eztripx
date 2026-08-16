@@ -39,6 +39,12 @@ enum DocumentGuidePreviewMode {
   show
 }
 
+enum ReviewStatus {
+  pending
+  published
+  rejected
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -49,6 +55,7 @@ model User {
   countryId    Int?
   country      Country?       @relation(fields: [countryId], references: [id])
   order        Order[]
+  review       Review[]
   refreshToken RefreshToken[]
 }
 
@@ -119,6 +126,7 @@ model DocumentGuide {
   createdAt              DateTime                   @default(now())
   updatedAt              DateTime                   @updatedAt
   order                  Order[]
+  review                 Review[]
 }
 
 model DocumentGuideImage {
@@ -160,4 +168,22 @@ model Order {
   updatedAt            DateTime        @updatedAt
   documentGuide        DocumentGuide   @relation(fields: [documentGuideId], references: [id])
   user                 User            @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id              String        @id @default(uuid())
+  userId          String
+  documentGuideId String
+  rating          Int
+  comment         String
+  displayName     String
+  travelerRole    String?
+  status          ReviewStatus  @default(pending)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentGuide   DocumentGuide @relation(fields: [documentGuideId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentGuideId])
+  @@index([status, createdAt])
 }

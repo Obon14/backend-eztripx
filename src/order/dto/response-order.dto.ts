@@ -25,6 +25,7 @@ export class ResponseOrderDto {
   createdAt: Date;
   updatedAt: Date;
   documentGuide: ResponseOrderDocumentGuideDto;
+  hasReview: boolean;
 
   constructor(
     row: {
@@ -41,6 +42,7 @@ export class ResponseOrderDto {
       updatedAt: Date;
       documentGuide: { id: string; titleId: string; titleEn: string | null };
     },
+    hasReview = false,
   ) {
     this.id = row.id;
     this.price = row.price.toString();
@@ -54,5 +56,6 @@ export class ResponseOrderDto {
     this.createdAt = row.createdAt;
     this.updatedAt = row.updatedAt;
     this.documentGuide = new ResponseOrderDocumentGuideDto(row.documentGuide);
+    this.hasReview = hasReview;
   }
 }

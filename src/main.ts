@@ -14,6 +14,7 @@ async function bootstrap() {
   .map(origin => origin.trim())
   .filter(Boolean);
 
+  app.setGlobalPrefix("api");
   app.useGlobalFilters(new HttpExceptionFilter());
 
   app.useGlobalPipes(

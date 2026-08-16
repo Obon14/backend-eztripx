@@ -25,7 +25,7 @@ export function buildPublicCoverImageUrl(
   guideId: string,
   imageId: string,
 ): string {
-  return `/document-guide/public/${guideId}/cover/${imageId}`;
+  return `/api/document-guide/public/${guideId}/cover/${imageId}`;
 }
 
 export function getCoverContentType(filename: string): string {

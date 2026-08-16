@@ -30,7 +30,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/auth/register",
+              "raw": "{{BASE}}/api/auth/register",
               "host": [
                 "{{BASE}}"
               ],
@@ -39,7 +39,7 @@
                 "register"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/register\" -H \"Content-Type: application/json\" -d '{\"email\":\"user@example.com\",\"password\":\"secret12\",\"role\":\"USER\"}'"
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/auth/register\" -H \"Content-Type: application/json\" -d '{\"email\":\"user@example.com\",\"password\":\"secret12\",\"role\":\"USER\"}'"
           },
           "response": []
         },
@@ -64,7 +64,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/auth/login",
+              "raw": "{{BASE}}/api/auth/login",
               "host": [
                 "{{BASE}}"
               ],
@@ -73,7 +73,7 @@
                 "login"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/login\" -H \"Content-Type: application/json\" -d '{\"email\":\"user@example.com\",\"password\":\"secret12\"}'"
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/auth/login\" -H \"Content-Type: application/json\" -d '{\"email\":\"user@example.com\",\"password\":\"secret12\"}'"
           },
           "response": []
         },
@@ -98,7 +98,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/auth/refresh",
+              "raw": "{{BASE}}/api/auth/refresh",
               "host": [
                 "{{BASE}}"
               ],
@@ -107,7 +107,7 @@
                 "refresh"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/refresh\" -H \"Content-Type: application/json\" -d '{\"refreshToken\":\"<REFRESH_TOKEN>\"}'"
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/auth/refresh\" -H \"Content-Type: application/json\" -d '{\"refreshToken\":\"<REFRESH_TOKEN>\"}'"
           },
           "response": []
         },
@@ -123,7 +123,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/auth/logout",
+              "raw": "{{BASE}}/api/auth/logout",
               "host": [
                 "{{BASE}}"
               ],
@@ -132,7 +132,7 @@
                 "logout"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/auth/logout\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/auth/logout\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         }
@@ -167,7 +167,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/region",
+              "raw": "{{BASE}}/api/region",
               "host": [
                 "{{BASE}}"
               ],
@@ -175,7 +175,7 @@
                 "region"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/region\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Southeast Asia\"}'"
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/region\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Southeast Asia\"}'"
           },
           "response": []
         },
@@ -205,7 +205,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/region/1",
+              "raw": "{{BASE}}/api/region/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -214,7 +214,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"SEA\"}'"
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/api/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"SEA\"}'"
           },
           "response": []
         },
@@ -230,7 +230,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/region/1",
+              "raw": "{{BASE}}/api/region/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -239,7 +239,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/api/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -259,7 +259,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{BASE}}/region?page=1&limit=10&search=",
+              "raw": "{{BASE}}/api/region?page=1&limit=10&search=",
               "host": [
                 "{{BASE}}"
               ],
@@ -281,7 +281,7 @@
                 }
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/region?page=1&limit=10&search=\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/region?page=1&limit=10&search=\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -297,7 +297,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/region/1",
+              "raw": "{{BASE}}/api/region/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -306,7 +306,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/region/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         }
@@ -341,7 +341,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/country",
+              "raw": "{{BASE}}/api/country",
               "host": [
                 "{{BASE}}"
               ],
@@ -349,7 +349,7 @@
                 "country"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/country\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Indonesia\",\"regionId\":1}'"
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/country\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Indonesia\",\"regionId\":1}'"
           },
           "response": []
         },
@@ -379,7 +379,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/country/1",
+              "raw": "{{BASE}}/api/country/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -388,7 +388,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Republik Indonesia\"}'"
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/api/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Republik Indonesia\"}'"
           },
           "response": []
         },
@@ -404,7 +404,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/country/1",
+              "raw": "{{BASE}}/api/country/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -413,7 +413,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/api/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -433,7 +433,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{BASE}}/country?page=1&limit=10",
+              "raw": "{{BASE}}/api/country?page=1&limit=10",
               "host": [
                 "{{BASE}}"
               ],
@@ -451,7 +451,7 @@
                 }
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/country?page=1&limit=10\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/country?page=1&limit=10\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -467,7 +467,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/country/1",
+              "raw": "{{BASE}}/api/country/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -476,7 +476,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/country/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         }
@@ -511,7 +511,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/city",
+              "raw": "{{BASE}}/api/city",
               "host": [
                 "{{BASE}}"
               ],
@@ -519,7 +519,7 @@
                 "city"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/city\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Jakarta\",\"countryId\":1}'"
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/city\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Jakarta\",\"countryId\":1}'"
           },
           "response": []
         },
@@ -549,7 +549,7 @@
               }
             },
             "url": {
-              "raw": "{{BASE}}/city/1",
+              "raw": "{{BASE}}/api/city/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -558,7 +558,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Jakarta Pusat\"}'"
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/api/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -H \"Content-Type: application/json\" -d '{\"name\":\"Jakarta Pusat\"}'"
           },
           "response": []
         },
@@ -574,7 +574,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/city/1",
+              "raw": "{{BASE}}/api/city/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -583,7 +583,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/api/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -603,7 +603,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{BASE}}/city?page=1&limit=10&search=",
+              "raw": "{{BASE}}/api/city?page=1&limit=10&search=",
               "host": [
                 "{{BASE}}"
               ],
@@ -625,7 +625,7 @@
                 }
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/city?page=1&limit=10\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/city?page=1&limit=10\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -641,7 +641,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/city/1",
+              "raw": "{{BASE}}/api/city/1",
               "host": [
                 "{{BASE}}"
               ],
@@ -650,7 +650,7 @@
                 "1"
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/city/1\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         }
@@ -702,7 +702,7 @@
               ]
             },
             "url": {
-              "raw": "{{BASE}}/document-guide",
+              "raw": "{{BASE}}/api/document-guide",
               "host": [
                 "{{BASE}}"
               ],
@@ -710,7 +710,7 @@
                 "document-guide"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/document-guide\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -F \"title=My Guide\" -F 'tags=[{\"regionId\":1,\"countryId\":1,\"cityId\":1}]' -F \"priceIdr=150000\" -F \"priceUsd=\" -F \"document=@/path/to/file.pdf;type=application/pdf\""
+            "description": "Generated from cURL: curl -sS -X POST \"{{BASE}}/api/document-guide\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -F \"title=My Guide\" -F 'tags=[{\"regionId\":1,\"countryId\":1,\"cityId\":1}]' -F \"priceIdr=150000\" -F \"priceUsd=\" -F \"document=@/path/to/file.pdf;type=application/pdf\""
           },
           "response": []
         },
@@ -741,7 +741,7 @@
               ]
             },
             "url": {
-              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>",
+              "raw": "{{BASE}}/api/document-guide/<GUIDE_UUID>",
               "host": [
                 "{{BASE}}"
               ],
@@ -750,7 +750,7 @@
                 "<GUIDE_UUID>"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -F \"title=Updated title\" -F 'tags=[{\"regionId\":1}]'"
+            "description": "Generated from cURL: curl -sS -X PATCH \"{{BASE}}/api/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\" -F \"title=Updated title\" -F 'tags=[{\"regionId\":1}]'"
           },
           "response": []
         },
@@ -766,7 +766,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>",
+              "raw": "{{BASE}}/api/document-guide/<GUIDE_UUID>",
               "host": [
                 "{{BASE}}"
               ],
@@ -775,7 +775,7 @@
                 "<GUIDE_UUID>"
               ]
             },
-            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS -X DELETE \"{{BASE}}/api/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -791,7 +791,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/document-guide?page=1&limit=10&search=",
+              "raw": "{{BASE}}/api/document-guide?page=1&limit=10&search=",
               "host": [
                 "{{BASE}}"
               ],
@@ -813,7 +813,7 @@
                 }
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/document-guide?page=1&limit=10&search=\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/document-guide?page=1&limit=10&search=\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -829,7 +829,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>",
+              "raw": "{{BASE}}/api/document-guide/<GUIDE_UUID>",
               "host": [
                 "{{BASE}}"
               ],
@@ -838,7 +838,7 @@
                 "<GUIDE_UUID>"
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/document-guide/<GUIDE_UUID>\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
@@ -854,7 +854,7 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/document-guide/<GUIDE_UUID>/preview",
+              "raw": "{{BASE}}/api/document-guide/<GUIDE_UUID>/preview",
               "host": [
                 "{{BASE}}"
               ],
@@ -864,12 +864,12 @@
                 "preview"
               ]
             },
-            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/document-guide/<GUIDE_UUID>/preview\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
+            "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/document-guide/<GUIDE_UUID>/preview\" -H \"Authorization: Bearer {{ACCESS_TOKEN}}\""
           },
           "response": []
         },
         {
-          "name": "http://localhost:3000/document-guide/DOCUMENT_GUIDE_UUID/download",
+          "name": "http://localhost:3000/api/document-guide/DOCUMENT_GUIDE_UUID/download",
           "request": {
             "method": "GET",
             "header": [
@@ -879,7 +879,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:3000/document-guide/DOCUMENT_GUIDE_UUID/download",
+              "raw": "http://localhost:3000/api/document-guide/DOCUMENT_GUIDE_UUID/download",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -891,7 +891,7 @@
                 "download"
               ]
             },
-            "description": "Generated from cURL: curl -L -o guide.pdf \\\n  -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\" \\\n  \"http://localhost:3000/document-guide/DOCUMENT_GUIDE_UUID/download\""
+            "description": "Generated from cURL: curl -L -o guide.pdf \\\n  -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\" \\\n  \"http://localhost:3000/api/document-guide/DOCUMENT_GUIDE_UUID/download\""
           },
           "response": []
         }
@@ -903,7 +903,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{BASE}}/",
+          "raw": "{{BASE}}/api/",
           "host": [
             "{{BASE}}"
           ],
@@ -911,7 +911,7 @@
             ""
           ]
         },
-        "description": "Generated from cURL: curl -sS --url \"{{BASE}}/\""
+        "description": "Generated from cURL: curl -sS --url \"{{BASE}}/api/\""
       },
       "response": []
     }

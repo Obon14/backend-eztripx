@@ -5,7 +5,7 @@ import { XenditWebhookGuard } from "./guard/xendit-webhook.guard";
 /**
  * Public endpoint for Xendit invoice webhooks.
  * Configure URL in Xendit Dashboard, e.g.:
- *   https://<your-api-host>/order/webhook/xendit
+ *   https://<your-api-host>/api/order/webhook/xendit
  */
 @Controller("order/webhook")
 export class OrderWebhookController {

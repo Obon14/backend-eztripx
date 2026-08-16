@@ -13,6 +13,7 @@ import { OrderModule } from './order/order.module';
 import { UserModule } from './user/user.module';
 import { GeoModule } from './geo/geo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     UserModule,
     GeoModule,
     DashboardModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -18,9 +18,9 @@ import { DocumentGuideIngestThrottle } from "../common/constants/throttle.consta
 
 /**
  * Machine REST create (static API key, no JWT / web login).
- * POST /api/document-guides — multipart. Distinct from admin `/document-guide`.
+ * POST /api/document-guides — multipart. Distinct from admin `/api/document-guide`.
  */
-@Controller("api/document-guides")
+@Controller("document-guides")
 @UseGuards(ThrottlerGuard, DocumentGuideIngestGuard)
 export class DocumentGuideIngestController {
   constructor(private readonly documentGuideService: DocumentGuideService) {}

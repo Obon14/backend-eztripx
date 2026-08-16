@@ -129,7 +129,18 @@ export class OrderService {
         documentGuide: { select: orderGuideSelect },
       },
     });
-    return rows.map((row) => new ResponseOrderDto(row));
+    const guideIds = [...new Set(rows.map((row) => row.documentGuideId))];
+    const reviews =
+      guideIds.length === 0
+        ? []
+        : await this.prisma.review.findMany({
+            where: { userId, documentGuideId: { in: guideIds } },
+            select: { documentGuideId: true },
+          });
+    const reviewed = new Set(reviews.map((row) => row.documentGuideId));
+    return rows.map(
+      (row) => new ResponseOrderDto(row, reviewed.has(row.documentGuideId)),
+    );
   }
 
   async findOneForUser(orderId: string, userId: string) {
@@ -142,7 +153,16 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
     }
-    return new ResponseOrderDto(order);
+    const review = await this.prisma.review.findUnique({
+      where: {
+        userId_documentGuideId: {
+          userId,
+          documentGuideId: order.documentGuideId,
+        },
+      },
+      select: { id: true },
+    });
+    return new ResponseOrderDto(order, Boolean(review));
   }
 
   async syncPaymentStatus(orderId: string, userId: string) {
