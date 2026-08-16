@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { plainToInstance } from 'class-transformer';
-import { RegisterResponseDto } from '../dto/register-response.dto';
+import { toRegisterResponse } from '../dto/register-response.dto';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -30,6 +29,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) throw new UnauthorizedException('User tidak ditemukan');
 
 
-    return plainToInstance(RegisterResponseDto, user);
+    return toRegisterResponse(user);
   }
 }

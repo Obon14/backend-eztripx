@@ -50,6 +50,8 @@ model User {
   email        String         @unique
   password     String
   role         Role           @default(USER)
+  displayName  String?
+  avatarFilename String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   countryId    Int?

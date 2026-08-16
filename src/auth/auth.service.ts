@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -10,9 +11,14 @@ import { RegisterDto } from "./dto/register.dto";
 import { ErrorMessages } from "../common/constants/message.constants";
 import { Role } from "../../generated/prisma/client";
 import * as bcrypt from "bcrypt";
-import { RegisterResponseDto } from "./dto/register-response.dto";
-import { plainToInstance } from "class-transformer";
+import { toRegisterResponse } from "./dto/register-response.dto";
 import { LoginDto } from "./dto/login.dto";
+import {
+  avatarExists,
+  getAvatarContentType,
+  openAvatarStream,
+  removeAvatarFile,
+} from "./avatar.storage";
 
 
 interface JwtPayload {
@@ -50,7 +56,7 @@ export class AuthService {
         role: Role.USER,
       },
     });
-    return plainToInstance(RegisterResponseDto, newUser);
+    return toRegisterResponse(newUser);
   }
 
   async login(req: LoginDto): Promise<AuthToken> {
@@ -136,6 +142,45 @@ export class AuthService {
     });
 
     return "success logout";
+  }
+
+  async updateProfile(
+    userId: string,
+    displayName: string | undefined,
+    file: Express.Multer.File | undefined,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+
+    const data: { displayName?: string | null; avatarFilename?: string } = {};
+    if (displayName !== undefined) {
+      data.displayName = displayName.trim() || null;
+    }
+    if (file) {
+      if (user.avatarFilename && user.avatarFilename !== file.filename) {
+        await removeAvatarFile(user.avatarFilename);
+      }
+      data.avatarFilename = file.filename;
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+    return toRegisterResponse(updated);
+  }
+
+  async getAvatar(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.avatarFilename || !avatarExists(user.avatarFilename)) {
+      throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+    return {
+      stream: openAvatarStream(user.avatarFilename),
+      contentType: getAvatarContentType(user.avatarFilename),
+    };
   }
 
   async findUserByEmail(email: string) {
