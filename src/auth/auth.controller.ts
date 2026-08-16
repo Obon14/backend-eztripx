@@ -76,7 +76,7 @@ export class AuthController {
   @UseInterceptors(
     FileInterceptor("avatar", {
       storage: avatarMulterStorage(),
-      limits: { fileSize: 2 * 1024 * 1024 },
+      limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
   updateMe(
