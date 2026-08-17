@@ -16,7 +16,7 @@ import { RoleEnums } from "../common/enum/role.enum";
 
 @UseGuards(JwtGuard, RoleGuard)
 @Roles(RoleEnums.ADMIN)
-@Controller("order/admin")
+@Controller("admin/order")
 export class OrderAdminController {
   constructor(private readonly orderService: OrderService) {}
 

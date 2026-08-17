@@ -9,7 +9,7 @@ import { MailModule } from "../mail/mail.module";
 
 @Module({
   imports: [XenditModule, MailModule],
-  controllers: [OrderController, OrderWebhookController, OrderAdminController],
+  controllers: [OrderAdminController, OrderController, OrderWebhookController],
   providers: [OrderService, XenditWebhookGuard],
   exports: [OrderService],
 })
