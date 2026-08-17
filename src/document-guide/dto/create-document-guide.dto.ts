@@ -29,11 +29,17 @@ export class CreateDocumentGuideDto {
   @IsString()
   titleEn?: string;
 
-  /** Optional public card description. Empty string clears to null on update. */
+  /** Optional public card description (Indonesian). Empty string clears to null on update. */
   @IsOptional()
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  /** Optional English public card description. Empty string clears to null on update. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  descriptionEn?: string;
 
   @IsOptional()
   @IsNumber()

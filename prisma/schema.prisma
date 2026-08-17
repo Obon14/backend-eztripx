@@ -112,8 +112,10 @@ model DocumentGuide {
   id                     String                     @id @default(uuid())
   titleId                String
   titleEn                String?
-  /// Optional short description shown on public cards.
+  /// Optional short description shown on public cards (Indonesian).
   description            String?
+  /// Optional English description for public cards when locale is en.
+  descriptionEn          String?
   nameDocument           String
   tripDays               Int?
   priceIdr               Decimal?                   @db.Decimal(15, 2)

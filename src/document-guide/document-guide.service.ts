@@ -105,6 +105,7 @@ export class DocumentGuideService {
         titleId: dto.titleId.trim(),
         titleEn: dto.titleEn?.trim() || null,
         description: dto.description?.trim() || null,
+        descriptionEn: dto.descriptionEn?.trim() || null,
         nameDocument,
         tripDays: dto.tripDays ?? null,
         priceIdr: this.toDecimalOrNull(dto.priceIdr),
@@ -613,6 +614,7 @@ export class DocumentGuideService {
       dto.titleId !== undefined ||
       dto.titleEn !== undefined ||
       dto.description !== undefined ||
+      dto.descriptionEn !== undefined ||
       dto.priceIdr !== undefined ||
       dto.priceUsd !== undefined ||
       dto.tripDays !== undefined ||
@@ -686,6 +688,10 @@ export class DocumentGuideService {
           description:
             dto.description !== undefined
               ? dto.description?.trim() || null
+              : undefined,
+          descriptionEn:
+            dto.descriptionEn !== undefined
+              ? dto.descriptionEn?.trim() || null
               : undefined,
           nameDocument: documentFile ? nameDocument : undefined,
           tripDays: dto.tripDays !== undefined ? dto.tripDays : undefined,
@@ -1044,6 +1050,7 @@ export class DocumentGuideService {
       titleId: body.titleId ?? body.title,
       titleEn: body.titleEn,
       description: body.description,
+      descriptionEn: body.descriptionEn,
       priceIdr: this.parseOptionalNumberForCreate(body.priceIdr),
       priceUsd: this.parseOptionalNumberForCreate(body.priceUsd),
       tripDays: this.parseOptionalIntForCreate(body.tripDays),
@@ -1073,6 +1080,9 @@ export class DocumentGuideService {
     }
     if (body.description !== undefined) {
       partial.description = body.description;
+    }
+    if (body.descriptionEn !== undefined) {
+      partial.descriptionEn = body.descriptionEn;
     }
     if (body.priceIdr !== undefined) {
       partial.priceIdr = this.parseOptionalNumber(body.priceIdr);

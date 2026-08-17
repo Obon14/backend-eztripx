@@ -18,6 +18,8 @@ import { ErrorMessages } from "../common/constants/message.constants";
 import { RoleEnums } from "../common/enum/role.enum";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { ResponseOrderDto } from "./dto/response-order.dto";
+import { ResponseAdminOrderDto } from "./dto/response-admin-order.dto";
+import { OrderAdminQueryDto } from "./dto/order-admin-query.dto";
 import type { InvoiceStatus } from "xendit-node/invoice/models";
 import { MailService } from "../mail/mail.service";
 
@@ -143,6 +145,60 @@ export class OrderService {
     );
   }
 
+  async findAllAdmin(query: OrderAdminQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const search = query.search?.trim();
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.OrderWhereInput = {};
+
+    if (query.status) {
+      where.statusPayment = query.status;
+    }
+
+    if (search) {
+      where.OR = [
+        { id: { contains: search, mode: "insensitive" } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+        {
+          documentGuide: {
+            titleId: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          documentGuide: {
+            titleEn: { contains: search, mode: "insensitive" },
+          },
+        },
+      ];
+    }
+
+    const [rows, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { select: { id: true, email: true } },
+          documentGuide: { select: orderGuideSelect },
+        },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data: rows.map((row) => new ResponseAdminOrderDto(row)),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  }
+
   async findOneForUser(orderId: string, userId: string) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
@@ -181,6 +237,34 @@ export class OrderService {
       gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
     });
     return new ResponseOrderDto(updated);
+  }
+
+  async syncPaymentStatusAdmin(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+    if (!order.gatewayTransactionId) {
+      throw new BadRequestException(ErrorMessages.ORDER_PAYMENT_NOT_INITIATED);
+    }
+
+    const invoice = await this.xendit.getInvoiceById(order.gatewayTransactionId);
+    await this.applyPaymentStatus(order.id, invoice.status, {
+      gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
+    });
+    const row = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { id: true, email: true } },
+        documentGuide: { select: orderGuideSelect },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
+    }
+    return new ResponseAdminOrderDto(row);
   }
 
   /**
