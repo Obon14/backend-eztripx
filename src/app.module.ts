@@ -14,6 +14,7 @@ import { UserModule } from './user/user.module';
 import { GeoModule } from './geo/geo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReviewModule } from './review/review.module';
+import { LegalModule } from './legal/legal.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ReviewModule } from './review/review.module';
     GeoModule,
     DashboardModule,
     ReviewModule,
+    LegalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -45,6 +45,11 @@ enum ReviewStatus {
   rejected
 }
 
+enum LegalSlug {
+  terms
+  privacy
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -190,4 +195,20 @@ model Review {
 
   @@unique([userId, documentGuideId])
   @@index([status, createdAt])
+}
+
+/// CMS rows for public /terms and /privacy. Seeded once; admin edits after that.
+model LegalDocument {
+  id               String    @id @default(uuid())
+  slug             LegalSlug @unique
+  titleId          String
+  titleEn          String
+  titleHighlightId String
+  titleHighlightEn String
+  introId          String    @db.Text
+  introEn          String    @db.Text
+  bodyId           String    @db.Text
+  bodyEn           String    @db.Text
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

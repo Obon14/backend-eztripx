@@ -41,6 +41,8 @@ export const ErrorMessages = {
   REVIEW_ALREADY_EXISTS: 'You have already reviewed this document guide',
   REVIEW_COMMENT_REQUIRED: 'Please write a short review comment',
   REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',
+  LEGAL_INVALID_SLUG: 'Legal document slug must be terms or privacy',
+  LEGAL_NOTHING_TO_UPDATE: 'No fields provided to update',
   USER_HAS_ORDERS: 'Cannot delete user because they have related orders',
   USER_CANNOT_DELETE_SELF: 'You cannot delete your own account',
 } as const;

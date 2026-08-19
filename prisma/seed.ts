@@ -246,6 +246,10 @@ async function main() {
     console.log("Seeding admin user…");
     await seedAdminUser(prisma);
 
+    console.log("Seeding legal documents…");
+    const { seedLegalDocuments } = await import("./seed-legal");
+    await seedLegalDocuments(prisma);
+
     console.log("Seed finished.");
   } finally {
     await prisma.$disconnect();
