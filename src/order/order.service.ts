@@ -43,6 +43,7 @@ export class OrderService {
   ) {}
 
   async create(userId: string, userEmail: string, dto: CreateOrderDto) {
+    const paymentBypassEnabled = this.isPaymentBypassEnabled();
     const guide = await this.prisma.documentGuide.findUnique({
       where: { id: dto.documentGuideId },
       select: {
@@ -69,6 +70,10 @@ export class OrderService {
       throw new ConflictException(ErrorMessages.ORDER_ALREADY_PURCHASED);
     }
     if (existing?.statusPayment === StatusPayment.PENDING) {
+      if (paymentBypassEnabled) {
+        const updated = await this.applyPaymentStatus(existing.id, "PAID");
+        return new ResponseOrderDto(updated);
+      }
       if (!existing.paymentUrl) {
         throw new BadRequestException(ErrorMessages.ORDER_PAYMENT_NOT_INITIATED);
       }
@@ -89,6 +94,11 @@ export class OrderService {
     });
 
     try {
+      if (paymentBypassEnabled) {
+        const updated = await this.applyPaymentStatus(order.id, "PAID");
+        return new ResponseOrderDto(updated);
+      }
+
       const returnBase =
         process.env.PAYMENT_RETURN_URL?.trim() ||
         process.env.FRONTEND_URL?.trim() ||
@@ -459,7 +469,7 @@ export class OrderService {
         });
       }
       this.logger.warn(
-        `Guide email not sent for order ${orderId} (check SMTP/logs)`,
+        `Guide email not sent for order ${orderId} (check Hostinger Mail API/logs)`,
       );
     }
 
@@ -491,5 +501,9 @@ export class OrderService {
       default:
         return StatusPayment.FAILED;
     }
+  }
+
+  private isPaymentBypassEnabled(): boolean {
+    return process.env.PAYMENT_BYPASS?.trim().toLowerCase() === "true";
   }
 }

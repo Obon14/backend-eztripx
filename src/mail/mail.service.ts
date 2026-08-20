@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import nodemailer from "nodemailer";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { getGuideFilePath } from "../document-guide/document-guide.storage";
 
 export type SendGuidePurchaseEmailParams = {
@@ -16,7 +16,11 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   private getMissingRequiredEnv(): string[] {
-    const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_FROM"] as const;
+    const required = [
+      "HOSTINGER_MAIL_API_TOKEN",
+      "HOSTINGER_MAILBOX_ID",
+      "MAIL_FROM",
+    ] as const;
     return required.filter((key) => !process.env[key]?.trim());
   }
 
@@ -26,7 +30,7 @@ export class MailService {
     const missingEnv = this.getMissingRequiredEnv();
     if (missingEnv.length > 0) {
       this.logger.warn(
-        `SMTP not configured (${missingEnv.join(", ")}) — skipping guide purchase email`,
+        `Hostinger Mail API not configured (${missingEnv.join(", ")}) — skipping guide purchase email`,
       );
       return false;
     }
@@ -47,41 +51,49 @@ export class MailService {
       ? `<p>Thank you for your purchase!</p><p>Your document guide <strong>${params.guideTitle}</strong> is attached to this email.</p><p>— EzTripx</p>`
       : `<p>Terima kasih atas pembelian Anda!</p><p>Panduan <strong>${params.guideTitle}</strong> terlampir di email ini.</p><p>— EzTripx</p>`;
 
-    const port = Number(process.env.SMTP_PORT ?? 587);
-    const secure =
-      process.env.SMTP_SECURE === "true" || port === 465;
-    // Gmail app passwords are often pasted with spaces — strip them for auth.
-    const smtpPass =
-      process.env.SMTP_PASS?.trim().replace(/\s+/g, "") ?? "";
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST!.trim(),
-      port,
-      secure,
-      auth: {
-        user: process.env.SMTP_USER!.trim(),
-        pass: smtpPass,
-      },
-    });
-
-    const fromName =
-      process.env.MAIL_FROM_NAME?.trim() || "EzTripx";
-    const from = `"${fromName}" <${process.env.MAIL_FROM!.trim()}>`;
+    const fromName = process.env.MAIL_FROM_NAME?.trim() || "EzTripx";
+    const token = process.env.HOSTINGER_MAIL_API_TOKEN!.trim();
+    const mailboxId = process.env.HOSTINGER_MAILBOX_ID!.trim();
 
     try {
-      await transporter.sendMail({
-        from,
-        to: params.to,
+      const pdfBuffer = await readFile(pdfPath);
+      const payload = {
+        to: [params.to],
+        displayName: fromName,
         subject,
         html,
         attachments: [
           {
             filename: params.nameDocument,
-            path: pdfPath,
+            content: pdfBuffer.toString("base64"),
             contentType: "application/pdf",
+            encoding: "base64",
           },
         ],
-      });
+      };
+
+      const response = await fetch(
+        `https://api.mail.hostinger.com/api/v1/mailboxes/${mailboxId}/send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        const body = await response.text();
+        this.logger.error(
+          `Hostinger Mail API send failed (${response.status}) for ${params.to}: ${body}`,
+        );
+        return false;
+      }
+
+      this.logger.log(`Guide email sent to ${params.to} via Hostinger Mail API`);
       return true;
     } catch (err) {
       this.logger.error(
