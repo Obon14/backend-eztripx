@@ -38,6 +38,8 @@ export const ErrorMessages = {
     'You have already purchased this document guide',
   ORDER_PENDING_EXISTS:
     'An unpaid order already exists for this document guide',
+  ORDER_CURRENCY_NOT_SUPPORTED:
+    'Midtrans payments currently support IDR only',
   REVIEW_ALREADY_EXISTS: 'You have already reviewed this document guide',
   REVIEW_COMMENT_REQUIRED: 'Please write a short review comment',
   REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',

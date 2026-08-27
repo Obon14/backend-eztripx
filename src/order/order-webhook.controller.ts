@@ -1,20 +1,20 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from "@nestjs/common";
 import { OrderService } from "./order.service";
-import { XenditWebhookGuard } from "./guard/xendit-webhook.guard";
+import { MidtransWebhookGuard } from "./guard/midtrans-webhook.guard";
 
 /**
- * Public endpoint for Xendit invoice webhooks.
- * Configure URL in Xendit Dashboard, e.g.:
- *   https://<your-api-host>/api/order/webhook/xendit
+ * Public endpoint for Midtrans payment notifications.
+ * Configure URL in Midtrans Dashboard → Settings → Configuration:
+ *   https://<your-api-host>/api/order/webhook/midtrans
  */
 @Controller("order/webhook")
 export class OrderWebhookController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Post("xendit")
+  @Post("midtrans")
   @HttpCode(200)
-  @UseGuards(XenditWebhookGuard)
-  handleXenditInvoice(@Body() body: Record<string, unknown>) {
-    return this.orderService.handleXenditInvoiceWebhook(body);
+  @UseGuards(MidtransWebhookGuard)
+  handleMidtransNotification(@Body() body: Record<string, unknown>) {
+    return this.orderService.handleMidtransNotification(body);
   }
 }

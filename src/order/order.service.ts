@@ -13,17 +13,19 @@ import {
   StatusPayment,
 } from "../../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { XenditService } from "../xendit/xendit.service";
+import {
+  MidtransService,
+  type MidtransTransactionStatus,
+} from "../midtrans/midtrans.service";
 import { ErrorMessages } from "../common/constants/message.constants";
 import { RoleEnums } from "../common/enum/role.enum";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { ResponseOrderDto } from "./dto/response-order.dto";
 import { ResponseAdminOrderDto } from "./dto/response-admin-order.dto";
 import { OrderAdminQueryDto } from "./dto/order-admin-query.dto";
-import type { InvoiceStatus } from "xendit-node/invoice/models";
 import { MailService } from "../mail/mail.service";
 
-const DEFAULT_INVOICE_DURATION_SEC = 86_400;
+const DEFAULT_SNAP_EXPIRY_SEC = 86_400;
 
 const orderGuideSelect = {
   id: true,
@@ -38,7 +40,7 @@ export class OrderService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly xendit: XenditService,
+    private readonly midtrans: MidtransService,
     private readonly mail: MailService,
   ) {}
 
@@ -62,6 +64,10 @@ export class OrderService {
       throw new BadRequestException(ErrorMessages.DOCUMENT_GUIDE_NOT_PUBLISHED);
     }
 
+    if (!paymentBypassEnabled && dto.currency !== "IDR") {
+      throw new BadRequestException(ErrorMessages.ORDER_CURRENCY_NOT_SUPPORTED);
+    }
+
     const existing = await this.resolveExistingOrderBeforeCheckout(
       userId,
       guide.id,
@@ -71,7 +77,7 @@ export class OrderService {
     }
     if (existing?.statusPayment === StatusPayment.PENDING) {
       if (paymentBypassEnabled) {
-        const updated = await this.applyPaymentStatus(existing.id, "PAID");
+        const updated = await this.applyPaymentStatus(existing.id, "settlement");
         return new ResponseOrderDto(updated);
       }
       if (!existing.paymentUrl) {
@@ -89,13 +95,13 @@ export class OrderService {
         price,
         currency: dto.currency,
         statusPayment: StatusPayment.PENDING,
-        paymentProvider: PaymentProvider.XENDIT,
+        paymentProvider: PaymentProvider.MIDTRANS,
       },
     });
 
     try {
       if (paymentBypassEnabled) {
-        const updated = await this.applyPaymentStatus(order.id, "PAID");
+        const updated = await this.applyPaymentStatus(order.id, "settlement");
         return new ResponseOrderDto(updated);
       }
 
@@ -103,23 +109,48 @@ export class OrderService {
         process.env.PAYMENT_RETURN_URL?.trim() ||
         process.env.FRONTEND_URL?.trim() ||
         "http://localhost:3000";
-      const successRedirectUrl = `${returnBase.replace(/\/$/, "")}/payment/return?orderId=${order.id}`;
+      const finishRedirectUrl = `${returnBase.replace(/\/$/, "")}/payment/return?orderId=${order.id}`;
 
-      const invoice = await this.xendit.createInvoice({
-        externalId: order.id,
-        amount: this.toXenditAmount(price, dto.currency),
-        currency: dto.currency,
-        description: guide.titleEn?.trim() || guide.titleId,
-        payerEmail: userEmail,
-        invoiceDuration: DEFAULT_INVOICE_DURATION_SEC,
-        successRedirectUrl,
+      const itemName = (
+        guide.titleEn?.trim() ||
+        guide.titleId ||
+        "Document Guide"
+      ).slice(0, 50);
+      const grossAmount = this.toMidtransAmount(price);
+
+      const snap = await this.midtrans.createSnapTransaction({
+        transaction_details: {
+          order_id: order.id,
+          gross_amount: grossAmount,
+        },
+        item_details: [
+          {
+            id: guide.id,
+            price: grossAmount,
+            quantity: 1,
+            name: itemName,
+          },
+        ],
+        customer_details: {
+          email: userEmail,
+        },
+        credit_card: {
+          secure: true,
+        },
+        callbacks: {
+          finish: finishRedirectUrl,
+        },
+        expiry: {
+          unit: "seconds",
+          duration: DEFAULT_SNAP_EXPIRY_SEC,
+        },
       });
 
       const updated = await this.prisma.order.update({
         where: { id: order.id },
         data: {
-          gatewayTransactionId: invoice.id ?? null,
-          paymentUrl: invoice.invoiceUrl ?? null,
+          gatewayTransactionId: snap.token ?? null,
+          paymentUrl: snap.redirect_url ?? null,
         },
         include: {
           documentGuide: { select: orderGuideSelect },
@@ -238,14 +269,20 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
     }
-    if (!order.gatewayTransactionId) {
+    if (!order.gatewayTransactionId && !order.paymentUrl) {
       throw new BadRequestException(ErrorMessages.ORDER_PAYMENT_NOT_INITIATED);
     }
 
-    const invoice = await this.xendit.getInvoiceById(order.gatewayTransactionId);
-    const updated = await this.applyPaymentStatus(order.id, invoice.status, {
-      gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
-    });
+    const status = await this.fetchMidtransStatus(order.id);
+    const updated = await this.applyPaymentStatus(
+      order.id,
+      status.transaction_status ?? "pending",
+      {
+        gatewayTransactionId:
+          status.transaction_id ?? order.gatewayTransactionId,
+        fraudStatus: status.fraud_status,
+      },
+    );
     return new ResponseOrderDto(updated);
   }
 
@@ -256,14 +293,20 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
     }
-    if (!order.gatewayTransactionId) {
+    if (!order.gatewayTransactionId && !order.paymentUrl) {
       throw new BadRequestException(ErrorMessages.ORDER_PAYMENT_NOT_INITIATED);
     }
 
-    const invoice = await this.xendit.getInvoiceById(order.gatewayTransactionId);
-    await this.applyPaymentStatus(order.id, invoice.status, {
-      gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
-    });
+    const status = await this.fetchMidtransStatus(order.id);
+    await this.applyPaymentStatus(
+      order.id,
+      status.transaction_status ?? "pending",
+      {
+        gatewayTransactionId:
+          status.transaction_id ?? order.gatewayTransactionId,
+        fraudStatus: status.fraud_status,
+      },
+    );
     const row = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -278,40 +321,33 @@ export class OrderService {
   }
 
   /**
-   * Xendit invoice webhook (Invoice API). Idempotent — safe to retry.
+   * Midtrans HTTP notification. Idempotent — safe to retry.
    */
-  async handleXenditInvoiceWebhook(payload: Record<string, unknown>) {
-    const externalId = this.readWebhookField(payload, "external_id", "externalId");
-    const invoiceId = this.readWebhookField(payload, "id", "invoice_id");
-    const status = this.readWebhookField(payload, "status");
+  async handleMidtransNotification(payload: Record<string, unknown>) {
+    const orderId = this.readWebhookField(payload, "order_id");
+    const transactionStatus = this.readWebhookField(
+      payload,
+      "transaction_status",
+    );
+    const transactionId = this.readWebhookField(payload, "transaction_id");
+    const fraudStatus = this.readWebhookField(payload, "fraud_status");
 
-    if (!externalId || !status) {
-      throw new BadRequestException("Invalid Xendit webhook payload");
+    if (!orderId || !transactionStatus) {
+      throw new BadRequestException("Invalid Midtrans notification payload");
     }
 
     const order = await this.prisma.order.findUnique({
-      where: { id: externalId },
+      where: { id: orderId },
     });
 
     if (!order) {
       return { ok: true, ignored: true, reason: "order_not_found" };
     }
 
-    if (
-      invoiceId &&
-      order.gatewayTransactionId &&
-      order.gatewayTransactionId !== invoiceId
-    ) {
-      return { ok: true, ignored: true, reason: "invoice_id_mismatch" };
-    }
-
-    const updated = await this.applyPaymentStatus(
-      order.id,
-      status as InvoiceStatus,
-      {
-        gatewayTransactionId: invoiceId ?? order.gatewayTransactionId,
-      },
-    );
+    const updated = await this.applyPaymentStatus(order.id, transactionStatus, {
+      gatewayTransactionId: transactionId ?? order.gatewayTransactionId,
+      fraudStatus,
+    });
 
     return {
       ok: true,
@@ -356,17 +392,13 @@ export class OrderService {
     return raw;
   }
 
-  private toXenditAmount(price: Prisma.Decimal, currency: string): number {
-    const value = price.toNumber();
-    if (currency === "IDR") {
-      return Math.round(value);
-    }
-    return Math.round(value * 100) / 100;
+  private toMidtransAmount(price: Prisma.Decimal): number {
+    return Math.round(price.toNumber());
   }
 
   /**
    * Blocks duplicate checkout: one PAID per user+guide, resume active PENDING.
-   * Syncs stale PENDING with Xendit so expired invoices allow a new order.
+   * Syncs stale PENDING with Midtrans so expired payments allow a new order.
    */
   private async resolveExistingOrderBeforeCheckout(
     userId: string,
@@ -390,29 +422,70 @@ export class OrderService {
       return order;
     }
 
-    if (!order.gatewayTransactionId) {
+    if (!order.gatewayTransactionId && !order.paymentUrl) {
       return order;
     }
 
-    const invoice = await this.xendit.getInvoiceById(order.gatewayTransactionId);
-    const nextStatus = this.mapXenditStatus(invoice.status);
+    try {
+      const status = await this.fetchMidtransStatus(order.id);
+      const nextStatus = this.mapMidtransStatus(
+        status.transaction_status,
+        status.fraud_status,
+      );
 
-    if (nextStatus === order.statusPayment) {
+      if (nextStatus === order.statusPayment) {
+        return order;
+      }
+
+      return this.applyPaymentStatus(
+        order.id,
+        status.transaction_status ?? "pending",
+        {
+          gatewayTransactionId:
+            status.transaction_id ?? order.gatewayTransactionId,
+          fraudStatus: status.fraud_status,
+        },
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Midtrans status check failed for order ${order.id}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
       return order;
     }
+  }
 
-    return this.applyPaymentStatus(order.id, invoice.status, {
-      gatewayTransactionId: invoice.id ?? order.gatewayTransactionId,
-    });
+  private async fetchMidtransStatus(
+    orderId: string,
+  ): Promise<MidtransTransactionStatus> {
+    try {
+      return await this.midtrans.getTransactionStatus(orderId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // Snap token created but payment not started yet — treat as pending.
+      if (/404|not found|Transaction doesn't exist/i.test(message)) {
+        return { order_id: orderId, transaction_status: "pending" };
+      }
+      throw err;
+    }
   }
 
   private async applyPaymentStatus(
     orderId: string,
-    invoiceStatus: InvoiceStatus | string,
-    opts?: { gatewayTransactionId?: string | null },
+    transactionStatus: string,
+    opts?: {
+      gatewayTransactionId?: string | null;
+      fraudStatus?: string | null;
+    },
   ) {
-    const nextStatus = this.mapXenditStatus(invoiceStatus as InvoiceStatus);
-    const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+    const nextStatus = this.mapMidtransStatus(
+      transactionStatus,
+      opts?.fraudStatus,
+    );
+    const existing = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
     if (!existing) {
       throw new NotFoundException(ErrorMessages.DATA_NOT_FOUND);
     }
@@ -489,17 +562,39 @@ export class OrderService {
     return undefined;
   }
 
-  private mapXenditStatus(status: InvoiceStatus): StatusPayment {
-    switch (status) {
-      case "PAID":
-      case "SETTLED":
-        return StatusPayment.PAID;
-      case "EXPIRED":
-        return StatusPayment.CANCELED;
-      case "PENDING":
+  private mapMidtransStatus(
+    transactionStatus?: string | null,
+    fraudStatus?: string | null,
+  ): StatusPayment {
+    const status = (transactionStatus ?? "").toLowerCase();
+    const fraud = (fraudStatus ?? "").toLowerCase();
+
+    if (status === "capture") {
+      if (fraud === "challenge") {
         return StatusPayment.PENDING;
-      default:
+      }
+      if (fraud === "accept" || !fraud) {
+        return StatusPayment.PAID;
+      }
+      return StatusPayment.FAILED;
+    }
+
+    switch (status) {
+      case "settlement":
+        return StatusPayment.PAID;
+      case "pending":
+        return StatusPayment.PENDING;
+      case "deny":
+      case "failure":
         return StatusPayment.FAILED;
+      case "cancel":
+      case "expire":
+        return StatusPayment.CANCELED;
+      case "refund":
+      case "partial_refund":
+        return StatusPayment.CANCELED;
+      default:
+        return StatusPayment.PENDING;
     }
   }
 

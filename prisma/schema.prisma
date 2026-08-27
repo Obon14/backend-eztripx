@@ -26,6 +26,7 @@ enum StatusPayment {
 
 enum PaymentProvider {
   XENDIT
+  MIDTRANS
 }
 
 enum DocumentGuideStatus {

@@ -3,14 +3,14 @@ import { OrderService } from "./order.service";
 import { OrderController } from "./order.controller";
 import { OrderAdminController } from "./order-admin.controller";
 import { OrderWebhookController } from "./order-webhook.controller";
-import { XenditWebhookGuard } from "./guard/xendit-webhook.guard";
-import { XenditModule } from "../xendit/xendit.module";
+import { MidtransWebhookGuard } from "./guard/midtrans-webhook.guard";
+import { MidtransModule } from "../midtrans/midtrans.module";
 import { MailModule } from "../mail/mail.module";
 
 @Module({
-  imports: [XenditModule, MailModule],
+  imports: [MidtransModule, MailModule],
   controllers: [OrderAdminController, OrderController, OrderWebhookController],
-  providers: [OrderService, XenditWebhookGuard],
+  providers: [OrderService, MidtransWebhookGuard],
   exports: [OrderService],
 })
 export class OrderModule {}
