@@ -2,7 +2,7 @@ import {
   BadGatewayException,
   Injectable,
   Logger,
-  UnauthorizedException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
@@ -170,7 +170,7 @@ export class MidtransService {
 
   private assertConfigured(): void {
     if (!this.configured || !this.snap || !this.core) {
-      throw new UnauthorizedException(
+      throw new ServiceUnavailableException(
         "Midtrans is not configured. Set MIDTRANS_SERVER_KEY in .env (Sandbox Access Keys), then restart.",
       );
     }
@@ -191,14 +191,15 @@ export class MidtransService {
     this.logger.error(`Midtrans ${action} failed (HTTP ${status}): ${detail}`);
 
     if (status === 401) {
-      const authErr = new UnauthorizedException(
+      const gatewayErr = new BadGatewayException(
         "Midtrans rejected the Server Key (401). " +
           "Paste MIDTRANS_SERVER_KEY from Sandbox Access Keys and set MIDTRANS_IS_PRODUCTION=false, then restart. " +
           "Verify with: npm run midtrans:verify",
       );
-      (authErr as UnauthorizedException & { midtransHttpStatus: number }).midtransHttpStatus =
-        401;
-      throw authErr;
+      (
+        gatewayErr as BadGatewayException & { midtransHttpStatus: number }
+      ).midtransHttpStatus = 401;
+      throw gatewayErr;
     }
 
     const gatewayErr = new BadGatewayException(

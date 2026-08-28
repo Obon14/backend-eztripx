@@ -1,11 +1,11 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
-  UnauthorizedException,
 } from "@nestjs/common";
 import {
   DocumentGuideStatus,
@@ -491,7 +491,7 @@ export class OrderService {
       }).then((row) => new ResponseOrderDto(row));
     } catch (err) {
       if (this.isMidtransAuthError(err)) {
-        throw new UnauthorizedException(
+        throw new BadGatewayException(
           ErrorMessages.ORDER_PAYMENT_GATEWAY_UNAUTHORIZED,
         );
       }
@@ -519,18 +519,19 @@ export class OrderService {
   }
 
   private isMidtransAuthError(err: unknown): boolean {
-    if (err instanceof UnauthorizedException) {
-      return true;
-    }
     const message = err instanceof Error ? err.message : String(err);
+    const response =
+      err && typeof err === "object" && "response" in err
+        ? String((err as { response?: unknown }).response ?? "")
+        : "";
     const status =
       err && typeof err === "object" && "midtransHttpStatus" in err
         ? Number((err as { midtransHttpStatus?: number }).midtransHttpStatus)
         : null;
     return (
       status === 401 ||
-      /401|Unknown Merchant|server_key|Access denied|unauthorized transaction|check client or server key/i.test(
-        message,
+      /401|Unknown Merchant|server_key|Server Key|Access denied|unauthorized transaction|check client or server key|rejected the merchant credentials/i.test(
+        `${message} ${response}`,
       )
     );
   }
