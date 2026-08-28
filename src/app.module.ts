@@ -22,6 +22,7 @@ import { LegalModule } from './legal/legal.module';
     PrismaModule,
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [".env"],
     }),
     ThrottlerModule.forRoot([
       {

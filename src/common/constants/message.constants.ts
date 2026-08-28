@@ -40,6 +40,8 @@ export const ErrorMessages = {
     'An unpaid order already exists for this document guide',
   ORDER_CURRENCY_NOT_SUPPORTED:
     'Midtrans payments currently support IDR only',
+  ORDER_PAYMENT_GATEWAY_UNAUTHORIZED:
+    'Payment gateway rejected the merchant credentials (Midtrans 401). Check MIDTRANS_SERVER_KEY and MIDTRANS_IS_PRODUCTION on the server, then restart.',
   REVIEW_ALREADY_EXISTS: 'You have already reviewed this document guide',
   REVIEW_COMMENT_REQUIRED: 'Please write a short review comment',
   REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',

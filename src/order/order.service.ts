@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import {
   DocumentGuideStatus,
@@ -80,10 +81,14 @@ export class OrderService {
         const updated = await this.applyPaymentStatus(existing.id, "settlement");
         return new ResponseOrderDto(updated);
       }
-      if (!existing.paymentUrl) {
-        throw new BadRequestException(ErrorMessages.ORDER_PAYMENT_NOT_INITIATED);
+      if (existing.paymentUrl) {
+        return new ResponseOrderDto(existing);
       }
-      return new ResponseOrderDto(existing);
+      // PENDING tanpa paymentUrl = checkout sebelumnya gagal di Midtrans; batalkan lalu buat baru.
+      await this.prisma.order.update({
+        where: { id: existing.id },
+        data: { statusPayment: StatusPayment.CANCELED },
+      });
     }
 
     const price = this.resolveGuidePrice(guide, dto.currency);
@@ -105,61 +110,14 @@ export class OrderService {
         return new ResponseOrderDto(updated);
       }
 
-      const returnBase =
-        process.env.PAYMENT_RETURN_URL?.trim() ||
-        process.env.FRONTEND_URL?.trim() ||
-        "http://localhost:3000";
-      const finishRedirectUrl = `${returnBase.replace(/\/$/, "")}/payment/return?orderId=${order.id}`;
-
-      const itemName = (
-        guide.titleEn?.trim() ||
-        guide.titleId ||
-        "Document Guide"
-      ).slice(0, 50);
-      const grossAmount = this.toMidtransAmount(price);
-
-      const snap = await this.midtrans.createSnapTransaction({
-        transaction_details: {
-          order_id: order.id,
-          gross_amount: grossAmount,
-        },
-        item_details: [
-          {
-            id: guide.id,
-            price: grossAmount,
-            quantity: 1,
-            name: itemName,
-          },
-        ],
-        customer_details: {
-          email: userEmail,
-        },
-        credit_card: {
-          secure: true,
-        },
-        callbacks: {
-          finish: finishRedirectUrl,
-        },
-        expiry: {
-          unit: "seconds",
-          duration: DEFAULT_SNAP_EXPIRY_SEC,
-        },
+      return await this.attachMidtransSnap(order.id, {
+        price,
+        guideId: guide.id,
+        guideTitle: guide.titleEn?.trim() || guide.titleId,
+        userEmail,
       });
-
-      const updated = await this.prisma.order.update({
-        where: { id: order.id },
-        data: {
-          gatewayTransactionId: snap.token ?? null,
-          paymentUrl: snap.redirect_url ?? null,
-        },
-        include: {
-          documentGuide: { select: orderGuideSelect },
-        },
-      });
-
-      return new ResponseOrderDto(updated);
     } catch (err) {
-      await this.prisma.order.delete({ where: { id: order.id } });
+      await this.prisma.order.delete({ where: { id: order.id } }).catch(() => undefined);
       throw err;
     }
   }
@@ -427,7 +385,7 @@ export class OrderService {
     }
 
     try {
-      const status = await this.fetchMidtransStatus(order.id);
+      const status = await this.fetchMidtransStatus(order.id, { soft: true });
       const nextStatus = this.mapMidtransStatus(
         status.transaction_status,
         status.fraud_status,
@@ -435,6 +393,22 @@ export class OrderService {
 
       if (nextStatus === order.statusPayment) {
         return order;
+      }
+
+      // Expired/canceled di Midtrans → biarkan create() buat order baru.
+      if (
+        nextStatus === StatusPayment.CANCELED ||
+        nextStatus === StatusPayment.FAILED
+      ) {
+        return this.applyPaymentStatus(
+          order.id,
+          status.transaction_status ?? "expire",
+          {
+            gatewayTransactionId:
+              status.transaction_id ?? order.gatewayTransactionId,
+            fraudStatus: status.fraud_status,
+          },
+        );
       }
 
       return this.applyPaymentStatus(
@@ -456,19 +430,109 @@ export class OrderService {
     }
   }
 
+  private async attachMidtransSnap(
+    orderId: string,
+    input: {
+      price: Prisma.Decimal;
+      guideId: string;
+      guideTitle: string;
+      userEmail: string;
+    },
+  ) {
+    const returnBase =
+      process.env.PAYMENT_RETURN_URL?.trim() ||
+      process.env.FRONTEND_URL?.trim() ||
+      "http://localhost:3000";
+    const finishRedirectUrl = `${returnBase.replace(/\/$/, "")}/payment/return?orderId=${orderId}`;
+
+    const itemName = (input.guideTitle || "Document Guide").slice(0, 50);
+    const grossAmount = this.toMidtransAmount(input.price);
+    // Midtrans item id max ~50 chars; UUID is fine but keep stable short id.
+    const itemId = input.guideId.replace(/-/g, "").slice(0, 50);
+
+    try {
+      const snap = await this.midtrans.createSnapTransaction({
+        transaction_details: {
+          order_id: orderId,
+          gross_amount: grossAmount,
+        },
+        item_details: [
+          {
+            id: itemId,
+            price: grossAmount,
+            quantity: 1,
+            name: itemName,
+          },
+        ],
+        customer_details: {
+          email: input.userEmail,
+        },
+        credit_card: {
+          secure: true,
+        },
+        callbacks: {
+          finish: finishRedirectUrl,
+        },
+        expiry: {
+          unit: "seconds",
+          duration: DEFAULT_SNAP_EXPIRY_SEC,
+        },
+      });
+
+      return this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          gatewayTransactionId: snap.token ?? null,
+          paymentUrl: snap.redirect_url ?? null,
+        },
+        include: {
+          documentGuide: { select: orderGuideSelect },
+        },
+      }).then((row) => new ResponseOrderDto(row));
+    } catch (err) {
+      if (this.isMidtransAuthError(err)) {
+        throw new UnauthorizedException(
+          ErrorMessages.ORDER_PAYMENT_GATEWAY_UNAUTHORIZED,
+        );
+      }
+      throw err;
+    }
+  }
+
   private async fetchMidtransStatus(
     orderId: string,
+    opts?: { soft?: boolean },
   ): Promise<MidtransTransactionStatus> {
     try {
       return await this.midtrans.getTransactionStatus(orderId);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      // Snap token created but payment not started yet — treat as pending.
-      if (/404|not found|Transaction doesn't exist/i.test(message)) {
+      // Snap created but payment not started, or merchant key mismatch while syncing.
+      if (
+        /404|not found|Transaction doesn't exist/i.test(message) ||
+        (opts?.soft && this.isMidtransAuthError(err))
+      ) {
         return { order_id: orderId, transaction_status: "pending" };
       }
       throw err;
     }
+  }
+
+  private isMidtransAuthError(err: unknown): boolean {
+    if (err instanceof UnauthorizedException) {
+      return true;
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    const status =
+      err && typeof err === "object" && "midtransHttpStatus" in err
+        ? Number((err as { midtransHttpStatus?: number }).midtransHttpStatus)
+        : null;
+    return (
+      status === 401 ||
+      /401|Unknown Merchant|server_key|Access denied|unauthorized transaction|check client or server key/i.test(
+        message,
+      )
+    );
   }
 
   private async applyPaymentStatus(
