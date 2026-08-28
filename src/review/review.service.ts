@@ -55,7 +55,7 @@ export class ReviewService {
         comment,
         displayName,
         travelerRole: dto.travelerRole?.trim() || null,
-        status: ReviewStatus.pending,
+        status: ReviewStatus.published,
       },
     });
     return new ResponseReviewDto(row);
